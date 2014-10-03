@@ -6,23 +6,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class HomeActivity extends ActionBarActivity {
-	private static boolean isStarted = false;
-
-	public static boolean isStarted() {
-		return isStarted;
-	}
-
-	@Override
-	protected void onStart() {
-		super.onStart();
-		isStarted = true;
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-		isStarted = false;
-	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

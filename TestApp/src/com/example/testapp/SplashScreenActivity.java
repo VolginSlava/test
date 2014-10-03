@@ -11,20 +11,8 @@ import java.util.concurrent.TimeUnit;
 public class SplashScreenActivity extends Activity {
 	private static final long SPLASH_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
-	private boolean isStarted = false;
-	private long splashScreenStartTime = System.currentTimeMillis();
-
-	@Override
-	protected void onStart() {
-		super.onStart();
-		isStarted = true;
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-		isStarted = false;
-	}
+	private Handler handler;
+	private Runnable runnable;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -35,15 +23,23 @@ public class SplashScreenActivity extends Activity {
 		if (timeout == 0) {
 			startHomeActivity();
 		} else {
-			Handler handler = new Handler();
-			handler.postDelayed(new Runnable() {
+			handler = new Handler();
+			runnable = new Runnable() {
 
 				@Override
 				public void run() {
 					startHomeActivity();
 				}
-			}, timeout);
+			};
+
+			handler.postDelayed(runnable, timeout);
 		}
+	}
+
+	@Override
+	protected void onPause() {
+		super.onDestroy();
+		handler.removeCallbacks(runnable);
 	}
 
 	@Override
@@ -54,17 +50,13 @@ public class SplashScreenActivity extends Activity {
 	}
 
 	private long getTimeout() {
-		long res = System.currentTimeMillis() - splashScreenStartTime;
-		res = SPLASH_TIMEOUT - res;
-		return res >= 0 ? res : 0;
+		return SPLASH_TIMEOUT;
 	}
 
 	private void startHomeActivity() {
-		if (isStarted && !HomeActivity.isStarted()) {
-			Intent intent = new Intent(SplashScreenActivity.this,
-					HomeActivity.class);
-			SplashScreenActivity.this.startActivity(intent);
-			SplashScreenActivity.this.finish();
-		}
+		Intent intent = new Intent(SplashScreenActivity.this,
+				HomeActivity.class);
+		SplashScreenActivity.this.startActivity(intent);
+		SplashScreenActivity.this.finish();
 	}
 }
