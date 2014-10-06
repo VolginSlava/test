@@ -6,11 +6,13 @@
     
     <string name="title_activity_splash">Splash</string>
     <string name="splash">SPLASH</string>
-    
-    <string name="homeLabel">Label</string>
-    <string name="homeButton">Play</string>
     <string name="splash_image_description">image</string>
     
+    
+    <string name="home_play_button">Play</string>
+    <string name="home_status_label_idle">Idle</string>
+    <string name="home_status_label_downloading">Downloading</string>
+    <string name="home_status_label_playing">Playing</string>
     
 
 </resources>

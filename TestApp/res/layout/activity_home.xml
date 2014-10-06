@@ -5,16 +5,18 @@
 	tools:context="com.example.testapp.HomeActivity" >
 
 	<TextView
+		android:id="@+id/v_status_label"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentTop="true"
-		android:text="@string/homeLabel" />
+		android:text="@string/home_status_label_idle" />
 
 	<Button
+		android:id="@+id/v_play_button"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"
 		android:layout_centerHorizontal="true"
-		android:text="@string/homeButton" />
+		android:text="@string/home_play_button" />
 
 </RelativeLayout>

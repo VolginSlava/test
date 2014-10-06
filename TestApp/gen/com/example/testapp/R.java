@@ -1092,7 +1092,7 @@ containing a value of this type.
         public static final int action_menu_divider=0x7f050016;
         public static final int action_menu_presenter=0x7f050017;
         public static final int action_mode_close_button=0x7f050024;
-        public static final int action_settings=0x7f05003e;
+        public static final int action_settings=0x7f050040;
         public static final int activity_chooser_view_content=0x7f050025;
         public static final int always=0x7f05000b;
         public static final int beginning=0x7f050011;
@@ -1141,8 +1141,10 @@ containing a value of this type.
         public static final int top_action_bar=0x7f050020;
         public static final int up=0x7f050021;
         public static final int useLogo=0x7f050003;
-        public static final int v_splash_main_layout=0x7f05003c;
-        public static final int v_splash_text=0x7f05003d;
+        public static final int v_play_button=0x7f05003d;
+        public static final int v_splash_main_layout=0x7f05003e;
+        public static final int v_splash_text=0x7f05003f;
+        public static final int v_status_label=0x7f05003c;
         public static final int withText=0x7f05000c;
     }
     public static final class integer {
@@ -1246,10 +1248,12 @@ containing a value of this type.
         public static final int abc_shareactionprovider_share_with_application=0x7f0a000b;
         public static final int action_settings=0x7f0a000e;
         public static final int app_name=0x7f0a000d;
-        public static final int homeButton=0x7f0a0012;
-        public static final int homeLabel=0x7f0a0011;
+        public static final int home_play_button=0x7f0a0012;
+        public static final int home_status_label_downloading=0x7f0a0014;
+        public static final int home_status_label_idle=0x7f0a0013;
+        public static final int home_status_label_playing=0x7f0a0015;
         public static final int splash=0x7f0a0010;
-        public static final int splash_image_description=0x7f0a0013;
+        public static final int splash_image_description=0x7f0a0011;
         public static final int title_activity_splash=0x7f0a000f;
     }
     public static final class style {

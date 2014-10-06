@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 
@@ -26,14 +27,6 @@ public class SplashScreenActivity extends Activity {
 		creationTime = getCreationTime(savedInstanceState);
 
 		handler = new Handler();
-		homeActivityStarter = new Runnable() {
-
-			@Override
-			public void run() {
-				startHomeActivity();
-			}
-		};
-		handler.postDelayed(homeActivityStarter, getTimeout());
 
 		View splashMainLayout = findViewById(R.id.v_splash_main_layout);
 		splashMainLayout.setOnClickListener(new OnClickListener() {
@@ -49,7 +42,7 @@ public class SplashScreenActivity extends Activity {
 		if (savedInstanceState != null) {
 			return savedInstanceState.getLong(CREATION_TIME_KEY);
 		} else {
-			return creationTime = System.currentTimeMillis();
+			return System.currentTimeMillis();
 		}
 	}
 
@@ -59,12 +52,24 @@ public class SplashScreenActivity extends Activity {
 		outState.putLong(CREATION_TIME_KEY, creationTime);
 	}
 
-
+	@Override
+	protected void onResume() {
+		super.onResume();
+		homeActivityStarter = new Runnable() {
+	
+			@Override
+			public void run() {
+				startHomeActivity();
+			}
+		};
+		handler.postDelayed(homeActivityStarter, getTimeout());
+	}
 
 	@Override
-	protected void onDestroy() {
-		super.onDestroy();
+	protected void onPause() {
+		super.onPause();
 		handler.removeCallbacks(homeActivityStarter);
+		Log.d(ACTIVITY_SERVICE, "onPause removing thread");
 	}
 
 	private long getTimeout() {
@@ -74,6 +79,8 @@ public class SplashScreenActivity extends Activity {
 	}
 
 	private void startHomeActivity() {
+		Log.d(ACTIVITY_SERVICE, "Starting new home activity.");
+
 		Intent intent = new Intent(SplashScreenActivity.this,
 				HomeActivity.class);
 		startActivity(intent);
