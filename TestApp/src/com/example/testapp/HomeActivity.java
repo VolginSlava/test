@@ -34,6 +34,8 @@ public class HomeActivity extends Activity {
 	}
 
 	private DownloadAsyncTash downloadAsyncTash;
+
+	private static final String DOWNLOADED_FILE_KEY = "downloadedFile";
 	private byte[] downloadedFile;
 
 	@Override
@@ -99,6 +101,8 @@ public class HomeActivity extends Activity {
 			for (int i = 0; i <= MAX_PROGRESS; i += MAX_PROGRESS / 100) {
 				try {Thread.sleep(25);} catch (InterruptedException e) {}
 				publishProgress(i);
+
+				Log.d(ACTIVITY_SERVICE, "" + i);
 			}
 			return result;
 		}
@@ -161,6 +165,23 @@ public class HomeActivity extends Activity {
 	protected void onDestroy() {
 		super.onDestroy();
 		downloadAsyncTash.cancel(true);
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putByteArray(DOWNLOADED_FILE_KEY, downloadedFile);
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		downloadedFile = savedInstanceState.getByteArray(DOWNLOADED_FILE_KEY);
+
+		TextView label = (TextView) findViewById(R.id.v_status_label);
+		label.setText(R.string.home_status_label_idle);
+		label.setText(label.getText() + "\ndownloaded bytes: "
+				+ (downloadedFile != null ? downloadedFile.length : 0));
 	}
 
 	@Override
