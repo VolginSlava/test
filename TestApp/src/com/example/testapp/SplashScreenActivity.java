@@ -11,12 +11,12 @@ import java.util.concurrent.TimeUnit;
 
 public class SplashScreenActivity extends Activity {
 	private static final long SPLASH_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
-
 	private static final String CREATION_TIME_KEY = "creationTime";
+
 	private long creationTime;
 
 	private Handler handler;
-	private Runnable runnable;
+	private Runnable homeActivityStarter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -26,14 +26,14 @@ public class SplashScreenActivity extends Activity {
 		creationTime = getCreationTime(savedInstanceState);
 
 		handler = new Handler();
-		runnable = new Runnable() {
+		homeActivityStarter = new Runnable() {
 
 			@Override
 			public void run() {
 				startHomeActivity();
 			}
 		};
-		handler.postDelayed(runnable, getTimeout());
+		handler.postDelayed(homeActivityStarter, getTimeout());
 
 		View splashMainLayout = findViewById(R.id.v_splash_main_layout);
 		splashMainLayout.setOnClickListener(new OnClickListener() {
@@ -64,7 +64,7 @@ public class SplashScreenActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		handler.removeCallbacks(runnable);
+		handler.removeCallbacks(homeActivityStarter);
 	}
 
 	private long getTimeout() {
