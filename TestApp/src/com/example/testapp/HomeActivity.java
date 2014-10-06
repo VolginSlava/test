@@ -32,13 +32,9 @@ public class HomeActivity extends Activity {
 		}
 		FILE_URL = url;
 	}
-	private static final String CURRENT_MUSIC_DOWNLOADING_PROGRESS_KEY = "currentProgress";
-	private static final int MAX_PROGRESS = 100;
-
-	private ProgressDialog musicDownloadingProgressDialog;
-	// private Thread dialogUpdatingThread;
 
 	private DownloadAsyncTash downloadAsyncTash;
+	private byte[] downloadedFile;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +47,7 @@ public class HomeActivity extends Activity {
 
 	class DownloadAsyncTash extends AsyncTask<URL, Integer, byte[]> {
 		private static final int BUFFER_SIZE = 2 * 1024;
+		private static final int MAX_PROGRESS = 100;
 
 		private Context context;
 		private ProgressDialog musicDownloadingProgressDialog;
@@ -130,7 +127,7 @@ public class HomeActivity extends Activity {
 			byte[] b = new byte[BUFFER_SIZE];
 			int readBytes;
 			int downloaded = 0;
-			while ((readBytes = in.read(b)) > 0) {
+			while ((readBytes = in.read(b)) != -1) {
 				out.write(b, 0, readBytes);
 				downloaded += readBytes;
 				publishProgress(MAX_PROGRESS * downloaded / size);
@@ -156,37 +153,14 @@ public class HomeActivity extends Activity {
 					+ result.length);
 
 			musicDownloadingProgressDialog.dismiss();
+
+			downloadedFile = result;
 		}
 	}
-
-	private int getSavedProgress(Bundle savedInstanceState) {
-		int progress = savedInstanceState != null ? savedInstanceState
-				.getInt(CURRENT_MUSIC_DOWNLOADING_PROGRESS_KEY) : 0;
-
-		Log.d(ACTIVITY_SERVICE, "progress get: " + progress);
-		return progress;
-	}
-
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		int downloadingProgress = musicDownloadingProgressDialog != null ? musicDownloadingProgressDialog
-				.getProgress() : MAX_PROGRESS;
-
-		outState.putInt(CURRENT_MUSIC_DOWNLOADING_PROGRESS_KEY, downloadingProgress);
-		Log.d(ACTIVITY_SERVICE, "progress saved: " + downloadingProgress);
-		
-	}
-
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		// if (dialogUpdatingThread != null) {
-		// dialogUpdatingThread.interrupt();
-		// }
-		if (musicDownloadingProgressDialog != null) {
-			musicDownloadingProgressDialog.dismiss();
-		}
+		downloadAsyncTash.cancel(true);
 	}
 
 	@Override
