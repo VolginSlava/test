@@ -2,7 +2,8 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	tools:context="com.example.testapp.SplashScreenActivity" >
+	tools:context="com.example.testapp.SplashScreenActivity"
+	android:id="@+id/v_splash_main_layout" >
 
 	<RelativeLayout
 		android:layout_width="wrap_content"

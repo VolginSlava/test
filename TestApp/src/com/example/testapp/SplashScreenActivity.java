@@ -4,12 +4,16 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
 
 import java.util.concurrent.TimeUnit;
 
 public class SplashScreenActivity extends Activity {
 	private static final long SPLASH_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
+
+	private static final String CREATION_TIME_KEY = "creationTime";
+	private long creationTime;
 
 	private Handler handler;
 	private Runnable runnable;
@@ -19,44 +23,60 @@ public class SplashScreenActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_splash);
 
-		long timeout = getTimeout();
-		if (timeout == 0) {
-			startHomeActivity();
+		creationTime = getCreationTime(savedInstanceState);
+
+		handler = new Handler();
+		runnable = new Runnable() {
+
+			@Override
+			public void run() {
+				startHomeActivity();
+			}
+		};
+		handler.postDelayed(runnable, getTimeout());
+
+		View splashMainLayout = findViewById(R.id.v_splash_main_layout);
+		splashMainLayout.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				startHomeActivity();
+			}
+		});
+	}
+
+	private long getCreationTime(Bundle savedInstanceState) {
+		if (savedInstanceState != null) {
+			return savedInstanceState.getLong(CREATION_TIME_KEY);
 		} else {
-			handler = new Handler();
-			runnable = new Runnable() {
-
-				@Override
-				public void run() {
-					startHomeActivity();
-				}
-			};
-
-			handler.postDelayed(runnable, timeout);
+			return creationTime = System.currentTimeMillis();
 		}
 	}
 
 	@Override
-	protected void onPause() {
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putLong(CREATION_TIME_KEY, creationTime);
+	}
+
+
+
+	@Override
+	protected void onDestroy() {
 		super.onDestroy();
 		handler.removeCallbacks(runnable);
 	}
 
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		super.onTouchEvent(event);
-		startHomeActivity();
-		return true;
-	}
-
 	private long getTimeout() {
-		return SPLASH_TIMEOUT;
+		long timeout = SPLASH_TIMEOUT
+				- (System.currentTimeMillis() - creationTime);
+		return timeout >= 0 ? timeout : 0;
 	}
 
 	private void startHomeActivity() {
 		Intent intent = new Intent(SplashScreenActivity.this,
 				HomeActivity.class);
-		SplashScreenActivity.this.startActivity(intent);
-		SplashScreenActivity.this.finish();
+		startActivity(intent);
+		finish();
 	}
 }
