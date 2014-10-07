@@ -27,8 +27,6 @@ public class HomeActivity extends Activity {
 
 	private DownloadAsyncTash downloadAsyncTash;
 
-	// private static final String DOWNLOADED_FILE_KEY = "downloadedFile";
-	// private byte[] downloadedFile;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -43,39 +41,31 @@ public class HomeActivity extends Activity {
 		} else {
 			downloadAsyncTash = (DownloadAsyncTash) getLastNonConfigurationInstance();
 			downloadAsyncTash.setNewActivity(this);
-			String msg = "getLastNonConfigurationInstance != null. Current state: "
-					+ downloadAsyncTash.getStatus();
-			if (downloadAsyncTash.getStatus() == Status.FINISHED) {
-				try {
-					msg += ". File size: " + downloadAsyncTash.get().length;
-				} catch (InterruptedException e) {
-					Log.e(ACTIVITY_SERVICE, "", e);
-				} catch (ExecutionException e) {
-					Log.e(ACTIVITY_SERVICE, "", e);
-				}
-			}
-			Log.d(ACTIVITY_SERVICE, msg);
+			onScreenRotationLogging();
 		}
+	}
+
+	private void onScreenRotationLogging() {
+		String msg = "getLastNonConfigurationInstance != null. Current state: "
+				+ downloadAsyncTash.getStatus();
+		if (downloadAsyncTash.getStatus() == Status.FINISHED) {
+			try {
+				msg += ". File size: " + downloadAsyncTash.get().length;
+			} catch (InterruptedException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			} catch (ExecutionException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			}
+		}
+		Log.d(ACTIVITY_SERVICE, msg);
 	}
 
 	@Override
 	@Deprecated
 	public Object onRetainNonConfigurationInstance() {
-		Log.d(ACTIVITY_SERVICE, "onRetainNonConfigurationInstance");
+		Log.d(ACTIVITY_SERVICE, "onRetainNonConfigurationInstance called");
 		return downloadAsyncTash;
 	}
-
-	// @Override
-	// protected void onSaveInstanceState(Bundle outState) {
-	// super.onSaveInstanceState(outState);
-	// // outState.putByteArray(DOWNLOADED_FILE_KEY, downloadedFile);
-	// }
-	//
-	// @Override
-	// protected void onRestoreInstanceState(Bundle savedInstanceState) {
-	// super.onRestoreInstanceState(savedInstanceState);
-	// // downloadedFile = savedInstanceState.getByteArray(DOWNLOADED_FILE_KEY);
-	// }
 
 	@Override
 	protected void onPause() {
