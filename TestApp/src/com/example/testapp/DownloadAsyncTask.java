@@ -12,7 +12,7 @@ import java.net.URLConnection;
 import java.util.HashSet;
 
 class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
-	private static final String ASYNC_TASK = "DownloadAsyncTash";
+	private static final String ASYNC_TASK = "DownloadAsyncTask";
 	private static final int BUFFER_SIZE = 2 * 1024;
 	private static final int MAX_PROGRESS = 100;
 
