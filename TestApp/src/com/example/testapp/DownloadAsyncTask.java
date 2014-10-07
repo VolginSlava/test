@@ -1,11 +1,7 @@
 package com.example.testapp;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Button;
-import android.widget.TextView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,39 +9,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.HashSet;
 
 class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 	private static final String ASYNC_TASK = "DownloadAsyncTash";
 	private static final int BUFFER_SIZE = 2 * 1024;
 	private static final int MAX_PROGRESS = 100;
 
-	private Activity activity;
-	private ProgressDialog pd;
-	private boolean showProgress;
+	private HashSet<ProgressListener> progressListeners = new HashSet<ProgressListener>();
+
 
 	@Override
 	protected void onPreExecute() {
 		super.onPreExecute();
 		Log.d(ASYNC_TASK, "DownloadAsyncTash: start");
-
-		if (isActivityExist()) {
-			pd = new ProgressDialog(activity);
-			initializeProgressDialog(pd);
-		}
-	}
-
-	private boolean isActivityExist() {
-		return activity != null;
-	}
-
-	private void initializeProgressDialog(final ProgressDialog pd) {
-		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-
-		pd.setTitle("Title");
-		pd.setMessage("Downloading...");
-		pd.setMax(MAX_PROGRESS);
-
-		pd.show();
 	}
 
 	@Override
@@ -108,9 +85,17 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 	protected void onProgressUpdate(Integer... values) {
 		super.onProgressUpdate(values);
 
-		if (showProgress) {
-			pd.setProgress(values[0]);
+		for (ProgressListener pl : progressListeners) {
+			pl.onProgress(values[0], MAX_PROGRESS);
 		}
+	}
+
+	public void addProgressListener(ProgressListener pl) {
+		progressListeners.add(pl);
+	}
+
+	public void removeProgressListener(ProgressListener pl) {
+		progressListeners.remove(pl);
 	}
 
 	@Override
@@ -119,54 +104,8 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 		Log.d(ASYNC_TASK, "DownloadAsyncTash: end. File size: "
 				+ result.length);
 
-		showProgress(false);
-		
-		TextView label = (TextView) activity.findViewById(R.id.v_status_label);
-		label.setText(R.string.home_status_label_idle);
-
-		Button play = (Button) activity.findViewById(R.id.v_play_button);
-		play.setEnabled(true);
-	}
-
-	public void setNewActivity(Activity activity) {
-		this.activity = activity;
-
-		if (isNotFinished()) {
-			Button play = (Button) activity.findViewById(R.id.v_play_button);
-			play.setEnabled(false);
-
-			TextView label = (TextView) activity
-					.findViewById(R.id.v_status_label);
-			label.setText(R.string.home_status_label_downloading);
+		for (ProgressListener pl : progressListeners) {
+			pl.onPostExecute();
 		}
-	}
-
-	private boolean isNotFinished() {
-		return getStatus() != Status.FINISHED;
-	}
-
-	public void showProgress(boolean showProgress) {
-		this.showProgress = showProgress;
-		this.showProgress = false;
-
-		if (showProgress) {
-			if (needToShowProgressDialog()) {
-				pd = new ProgressDialog(activity);
-				initializeProgressDialog(pd);
-			}
-		} else {
-			if (needToCloseProgressDialog()) {
-				pd.dismiss();
-				pd = null;
-			}
-		}
-	}
-
-	private boolean needToCloseProgressDialog() {
-		return pd != null && isActivityExist();
-	}
-
-	private boolean needToShowProgressDialog() {
-		return pd == null && isNotFinished() && isActivityExist();
 	}
 }

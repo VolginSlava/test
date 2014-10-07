@@ -15,7 +15,6 @@ import java.util.concurrent.ExecutionException;
 
 public class HomeActivity extends Activity implements ProgressListener {
 	private static final int PROGRESS_DIALOG_ID = 1;
-	private static final int MAX_PROGRESS = 100;
 	private static final String FILE_URL_STRING = "https://upload.wikimedia.org/wikipedia/commons/6/66/Whitenoisesound.ogg";
 	private static final URL FILE_URL;
 	static {
@@ -31,7 +30,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 	private DownloadAsyncTask downloadAsyncTask;
 	private ProgressDialog pd;
-	private static int val = 0;
+
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -41,13 +40,26 @@ public class HomeActivity extends Activity implements ProgressListener {
 		
 		if (getLastNonConfigurationInstance() == null) {
 			downloadAsyncTask = new DownloadAsyncTask();
-			// downloadAsyncTask.setNewActivity(this);
-			// downloadAsyncTask.execute(FILE_URL);
+			downloadAsyncTask.execute(FILE_URL);
 		} else {
 			downloadAsyncTask = (DownloadAsyncTask) getLastNonConfigurationInstance();
-			downloadAsyncTask.setNewActivity(this);
 			onScreenRotationLogging();
 		}
+	}
+
+	private void onScreenRotationLogging() {
+		String msg = "getLastNonConfigurationInstance != null. Current state: "
+				+ downloadAsyncTask.getStatus();
+		if (downloadAsyncTask.getStatus() == Status.FINISHED) {
+			try {
+				msg += ". File size: " + downloadAsyncTask.get().length;
+			} catch (InterruptedException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			} catch (ExecutionException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			}
+		}
+		Log.d(ACTIVITY_SERVICE, msg);
 	}
 
 	@Override
@@ -80,22 +92,6 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 		pd.setTitle("Title");
 		pd.setMessage("Downloading...");
-		pd.setMax(MAX_PROGRESS);
-	}
-
-	private void onScreenRotationLogging() {
-		String msg = "getLastNonConfigurationInstance != null. Current state: "
-				+ downloadAsyncTask.getStatus();
-		if (downloadAsyncTask.getStatus() == Status.FINISHED) {
-			try {
-				msg += ". File size: " + downloadAsyncTask.get().length;
-			} catch (InterruptedException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (ExecutionException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			}
-		}
-		Log.d(ACTIVITY_SERVICE, msg);
 	}
 
 	@Override
@@ -106,23 +102,33 @@ public class HomeActivity extends Activity implements ProgressListener {
 	}
 
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onPause() {
 		super.onPause();
-		// showDialog(id);
-		// Dialog d = new Dialog(this);
-		// d.set
-		downloadAsyncTask.showProgress(false);
 
-		dismissDialog(PROGRESS_DIALOG_ID);
-
+		if (downloadAsyncTask != null) {
+			downloadAsyncTask.removeProgressListener(this);
+			if (downloadAsyncTask.getStatus() != Status.FINISHED) {
+				dismissDialog(PROGRESS_DIALOG_ID);
+			}
+		}
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onResume() {
 		super.onResume();
-//		downloadAsyncTask.showProgress(true);
-		showDialog(PROGRESS_DIALOG_ID);
+
+		if (needToShowProgressDialog()) {
+			downloadAsyncTask.addProgressListener(this);
+			showDialog(PROGRESS_DIALOG_ID);
+		}
+	}
+
+	private boolean needToShowProgressDialog() {
+		return downloadAsyncTask != null
+				&& downloadAsyncTask.getStatus() != Status.FINISHED;
 	}
 
 	@Override
@@ -131,6 +137,13 @@ public class HomeActivity extends Activity implements ProgressListener {
 			pd.setMax(maxVal);
 			pd.setProgress(val);
 		}
+	}
+
+	@SuppressWarnings("deprecation")
+	@Override
+	public void onPostExecute() {
+		dismissDialog(PROGRESS_DIALOG_ID);
+		removeDialog(PROGRESS_DIALOG_ID);
 	}
 
 	@Override
