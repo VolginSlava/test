@@ -1,14 +1,13 @@
 package com.example.testapp;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
 import android.widget.TextView;
 
 import java.io.ByteArrayOutputStream;
@@ -18,6 +17,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.concurrent.ExecutionException;
 
 public class HomeActivity extends Activity {
 	private static final String FILE_URL_STRING = "https://upload.wikimedia.org/wikipedia/commons/6/66/Whitenoisesound.ogg";
@@ -43,50 +43,77 @@ public class HomeActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 		
-		downloadAsyncTash = new DownloadAsyncTash(this);
-		downloadAsyncTash.execute(FILE_URL);
+		if (getLastNonConfigurationInstance() == null) {
+			downloadAsyncTash = new DownloadAsyncTash(this);
+			downloadAsyncTash.execute(FILE_URL);
+		} else {
+			downloadAsyncTash = (DownloadAsyncTash) getLastNonConfigurationInstance();
+			String msg = "getLastNonConfigurationInstance != null. Current state: "
+					+ downloadAsyncTash.getStatus();
+			if (downloadAsyncTash.getStatus() == Status.FINISHED) {
+				try {
+					msg += ". File size: " + downloadAsyncTash.get().length;
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			Log.d(ACTIVITY_SERVICE, msg);
+		}
+
 	}
 
-	class DownloadAsyncTash extends AsyncTask<URL, Integer, byte[]> {
+	@Override
+	@Deprecated
+	public Object onRetainNonConfigurationInstance() {
+		// super.onRetainNonConfigurationInstance();
+		Log.d(ACTIVITY_SERVICE, "onRetainNonConfigurationInstance");
+		return downloadAsyncTash;
+	}
+
+	static class DownloadAsyncTash extends AsyncTask<URL, Integer, byte[]> {
 		private static final int BUFFER_SIZE = 2 * 1024;
 		private static final int MAX_PROGRESS = 100;
 
-		private Context context;
-		private ProgressDialog musicDownloadingProgressDialog;
+		// private Context context;
+		// private ProgressDialog musicDownloadingProgressDialog;
 
-		private Button play;
-		private TextView label;
+		// private Button play;
+		// private TextView label;
 
 		public DownloadAsyncTash(Context context) {
-			this.context = context;
+			// this.context = context;
 		}
 
 		@Override
 		protected void onPreExecute() {
 			super.onPreExecute();
-			musicDownloadingProgressDialog = new ProgressDialog(context);
-			initializeProgressDialog(musicDownloadingProgressDialog);
+			// musicDownloadingProgressDialog = new ProgressDialog(context);
+			// initializeProgressDialog(musicDownloadingProgressDialog);
 
-			play = (Button) findViewById(R.id.v_play_button);
-			play.setEnabled(false);
-
-			label = (TextView) findViewById(R.id.v_status_label);
-			label.setText(R.string.home_status_label_downloading);
+			// play = (Button) findViewById(R.id.v_play_button);
+			// play.setEnabled(false);
+			//
+			// label = (TextView) findViewById(R.id.v_status_label);
+			// label.setText(R.string.home_status_label_downloading);
 
 			Log.d(ACTIVITY_SERVICE, "DownloadAsyncTash: start");
 		}
 
-		private void initializeProgressDialog(final ProgressDialog pd) {
-			pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		
-			// pd.setCancelable(false);
-		
-			pd.setTitle("Title");
-			pd.setMessage("Message");
-			pd.setMax(MAX_PROGRESS);
-		
-			pd.show();
-		}
+		// private void initializeProgressDialog(final ProgressDialog pd) {
+		// pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		//
+		// // pd.setCancelable(false);
+		//
+		// pd.setTitle("Title");
+		// pd.setMessage("Message");
+		// pd.setMax(MAX_PROGRESS);
+		//
+		// pd.show();
+		// }
 
 		@Override
 		protected byte[] doInBackground(URL... urls) {
@@ -104,7 +131,7 @@ public class HomeActivity extends Activity {
 				try {Thread.sleep(25);} catch (InterruptedException e) {}
 				publishProgress(i);
 
-				// Log.d(ACTIVITY_SERVICE, "" + i);
+				Log.d(ACTIVITY_SERVICE, "" + i);
 			}
 			return result;
 		}
@@ -145,31 +172,28 @@ public class HomeActivity extends Activity {
 		@Override
 		protected void onProgressUpdate(Integer... values) {
 			super.onProgressUpdate(values);
-			musicDownloadingProgressDialog.setProgress(values[0]);
+			// musicDownloadingProgressDialog.setProgress(values[0]);
 		}
 
 		@Override
 		protected void onPostExecute(byte[] result) {
 			super.onPostExecute(result);
 
-			play.setEnabled(true);
+			// play = (Button) findViewById(R.id.v_play_button);
+			// play.setEnabled(true);
+			//
+			// label = (TextView) findViewById(R.id.v_status_label);
+			// label.setText(R.string.home_status_label_idle);
+			// label.setText(label.getText() + "\ndownloaded bytes: "
+			// + result.length);
 
-			label.setText(R.string.home_status_label_idle);
-			label.setText(label.getText() + "\ndownloaded bytes: "
-					+ result.length);
+			// musicDownloadingProgressDialog.dismiss();
 
-			musicDownloadingProgressDialog.dismiss();
-
-			downloadedFile = result;
+			// downloadedFile = result;
 
 			Log.d(ACTIVITY_SERVICE, "DownloadAsyncTash: end. File size: "
 					+ result.length);
 		}
-	}
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		downloadAsyncTash.cancel(true);
 	}
 
 	@Override
