@@ -72,6 +72,8 @@ public class HomeActivity extends Activity {
 
 			label = (TextView) findViewById(R.id.v_status_label);
 			label.setText(R.string.home_status_label_downloading);
+
+			Log.d(ACTIVITY_SERVICE, "DownloadAsyncTash: start");
 		}
 
 		private void initializeProgressDialog(final ProgressDialog pd) {
@@ -159,6 +161,9 @@ public class HomeActivity extends Activity {
 			musicDownloadingProgressDialog.dismiss();
 
 			downloadedFile = result;
+
+			Log.d(ACTIVITY_SERVICE, "DownloadAsyncTash: end. File size: "
+					+ result.length);
 		}
 	}
 	@Override
