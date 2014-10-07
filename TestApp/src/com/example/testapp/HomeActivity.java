@@ -27,8 +27,8 @@ public class HomeActivity extends Activity {
 
 	private DownloadAsyncTash downloadAsyncTash;
 
-	private static final String DOWNLOADED_FILE_KEY = "downloadedFile";
-	private byte[] downloadedFile;
+	// private static final String DOWNLOADED_FILE_KEY = "downloadedFile";
+	// private byte[] downloadedFile;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -56,7 +56,6 @@ public class HomeActivity extends Activity {
 			}
 			Log.d(ACTIVITY_SERVICE, msg);
 		}
-
 	}
 
 	@Override
@@ -66,16 +65,28 @@ public class HomeActivity extends Activity {
 		return downloadAsyncTash;
 	}
 
+	// @Override
+	// protected void onSaveInstanceState(Bundle outState) {
+	// super.onSaveInstanceState(outState);
+	// // outState.putByteArray(DOWNLOADED_FILE_KEY, downloadedFile);
+	// }
+	//
+	// @Override
+	// protected void onRestoreInstanceState(Bundle savedInstanceState) {
+	// super.onRestoreInstanceState(savedInstanceState);
+	// // downloadedFile = savedInstanceState.getByteArray(DOWNLOADED_FILE_KEY);
+	// }
+
 	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putByteArray(DOWNLOADED_FILE_KEY, downloadedFile);
+	protected void onPause() {
+		super.onPause();
+		downloadAsyncTash.showProgress(false);
 	}
 
 	@Override
-	protected void onRestoreInstanceState(Bundle savedInstanceState) {
-		super.onRestoreInstanceState(savedInstanceState);
-		downloadedFile = savedInstanceState.getByteArray(DOWNLOADED_FILE_KEY);
+	protected void onResume() {
+		super.onResume();
+		downloadAsyncTash.showProgress(true);
 	}
 
 	@Override
