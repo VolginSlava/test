@@ -1,7 +1,11 @@
 package com.example.testapp;
 
+import android.app.Activity;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,6 +18,7 @@ class DownloadAsyncTash extends AsyncTask<URL, Integer, byte[]> {
 	private static final String ASYNC_TASK = "DownloadAsyncTash";
 	private static final int BUFFER_SIZE = 2 * 1024;
 	private static final int MAX_PROGRESS = 100;
+	private Activity activity;
 
 	@Override
 	protected void onPreExecute() {
@@ -83,5 +88,26 @@ class DownloadAsyncTash extends AsyncTask<URL, Integer, byte[]> {
 
 		Log.d(ASYNC_TASK, "DownloadAsyncTash: end. File size: "
 				+ result.length);
+
+		Toast.makeText(activity, "End", Toast.LENGTH_SHORT).show();
+
+		TextView label = (TextView) activity.findViewById(R.id.v_status_label);
+		label.setText(R.string.home_status_label_idle);
+
+		Button play = (Button) activity.findViewById(R.id.v_play_button);
+		play.setEnabled(true);
+	}
+
+	public void setNewActivity(Activity activity) {
+		this.activity = activity;
+
+		if (getStatus() != Status.FINISHED) {
+			Button play = (Button) activity.findViewById(R.id.v_play_button);
+			play.setEnabled(false);
+
+			TextView label = (TextView) activity
+					.findViewById(R.id.v_status_label);
+			label.setText(R.string.home_status_label_downloading);
+		}
 	}
 }
