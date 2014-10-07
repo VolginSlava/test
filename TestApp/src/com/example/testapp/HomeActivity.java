@@ -102,7 +102,7 @@ public class HomeActivity extends Activity {
 				try {Thread.sleep(25);} catch (InterruptedException e) {}
 				publishProgress(i);
 
-				Log.d(ACTIVITY_SERVICE, "" + i);
+				// Log.d(ACTIVITY_SERVICE, "" + i);
 			}
 			return result;
 		}
@@ -136,7 +136,7 @@ public class HomeActivity extends Activity {
 				downloaded += readBytes;
 				publishProgress(MAX_PROGRESS * downloaded / size);
 				
-				Log.d(ACTIVITY_SERVICE, "" + downloaded);
+				// Log.d(ACTIVITY_SERVICE, "" + downloaded);
 			}
 		}
 
