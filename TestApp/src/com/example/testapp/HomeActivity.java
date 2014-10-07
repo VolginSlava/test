@@ -25,7 +25,7 @@ public class HomeActivity extends Activity {
 		FILE_URL = url;
 	}
 
-	private DownloadAsyncTash downloadAsyncTash;
+	private DownloadAsyncTask downloadAsyncTask;
 
 
 	@SuppressWarnings("deprecation")
@@ -35,22 +35,22 @@ public class HomeActivity extends Activity {
 		setContentView(R.layout.activity_home);
 		
 		if (getLastNonConfigurationInstance() == null) {
-			downloadAsyncTash = new DownloadAsyncTash();
-			downloadAsyncTash.setNewActivity(this);
-			downloadAsyncTash.execute(FILE_URL);
+			downloadAsyncTask = new DownloadAsyncTask();
+			downloadAsyncTask.setNewActivity(this);
+			downloadAsyncTask.execute(FILE_URL);
 		} else {
-			downloadAsyncTash = (DownloadAsyncTash) getLastNonConfigurationInstance();
-			downloadAsyncTash.setNewActivity(this);
+			downloadAsyncTask = (DownloadAsyncTask) getLastNonConfigurationInstance();
+			downloadAsyncTask.setNewActivity(this);
 			onScreenRotationLogging();
 		}
 	}
 
 	private void onScreenRotationLogging() {
 		String msg = "getLastNonConfigurationInstance != null. Current state: "
-				+ downloadAsyncTash.getStatus();
-		if (downloadAsyncTash.getStatus() == Status.FINISHED) {
+				+ downloadAsyncTask.getStatus();
+		if (downloadAsyncTask.getStatus() == Status.FINISHED) {
 			try {
-				msg += ". File size: " + downloadAsyncTash.get().length;
+				msg += ". File size: " + downloadAsyncTask.get().length;
 			} catch (InterruptedException e) {
 				Log.e(ACTIVITY_SERVICE, "", e);
 			} catch (ExecutionException e) {
@@ -64,19 +64,21 @@ public class HomeActivity extends Activity {
 	@Deprecated
 	public Object onRetainNonConfigurationInstance() {
 		Log.d(ACTIVITY_SERVICE, "onRetainNonConfigurationInstance called");
-		return downloadAsyncTash;
+		return downloadAsyncTask;
 	}
+
 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		downloadAsyncTash.showProgress(false);
+		// showDialog(id)
+		downloadAsyncTask.showProgress(false);
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		downloadAsyncTash.showProgress(true);
+		downloadAsyncTask.showProgress(true);
 	}
 
 	@Override

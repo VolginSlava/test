@@ -14,7 +14,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-class DownloadAsyncTash extends AsyncTask<URL, Integer, byte[]> {
+class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 	private static final String ASYNC_TASK = "DownloadAsyncTash";
 	private static final int BUFFER_SIZE = 2 * 1024;
 	private static final int MAX_PROGRESS = 100;
