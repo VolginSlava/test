@@ -1,6 +1,8 @@
 package com.example.testapp;
 
 import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,7 +13,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 
-public class HomeActivity extends Activity {
+public class HomeActivity extends Activity implements ProgressListener {
+	private static final int PROGRESS_DIALOG_ID = 1;
+	private static final int MAX_PROGRESS = 100;
 	private static final String FILE_URL_STRING = "https://upload.wikimedia.org/wikipedia/commons/6/66/Whitenoisesound.ogg";
 	private static final URL FILE_URL;
 	static {
@@ -26,7 +30,8 @@ public class HomeActivity extends Activity {
 	}
 
 	private DownloadAsyncTask downloadAsyncTask;
-
+	private ProgressDialog pd;
+	private static int val = 0;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -36,13 +41,46 @@ public class HomeActivity extends Activity {
 		
 		if (getLastNonConfigurationInstance() == null) {
 			downloadAsyncTask = new DownloadAsyncTask();
-			downloadAsyncTask.setNewActivity(this);
-			downloadAsyncTask.execute(FILE_URL);
+			// downloadAsyncTask.setNewActivity(this);
+			// downloadAsyncTask.execute(FILE_URL);
 		} else {
 			downloadAsyncTask = (DownloadAsyncTask) getLastNonConfigurationInstance();
 			downloadAsyncTask.setNewActivity(this);
 			onScreenRotationLogging();
 		}
+	}
+
+	@Override
+	@Deprecated
+	protected Dialog onCreateDialog(int id) {
+		switch (id) {
+		case PROGRESS_DIALOG_ID:
+			ProgressDialog pd = new ProgressDialog(this);
+			initializeProgressDialog(pd);
+			return pd;
+		default:
+			return null;
+		}
+	}
+
+	@Override
+	@Deprecated
+	protected void onPrepareDialog(int id, Dialog dialog) {
+		switch (id) {
+		case PROGRESS_DIALOG_ID:
+			pd = (ProgressDialog) dialog;
+			break;
+		default:
+			break;
+		}
+	}
+
+	private void initializeProgressDialog(ProgressDialog pd) {
+		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+
+		pd.setTitle("Title");
+		pd.setMessage("Downloading...");
+		pd.setMax(MAX_PROGRESS);
 	}
 
 	private void onScreenRotationLogging() {
@@ -71,14 +109,28 @@ public class HomeActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		// showDialog(id)
+		// showDialog(id);
+		// Dialog d = new Dialog(this);
+		// d.set
 		downloadAsyncTask.showProgress(false);
+
+		dismissDialog(PROGRESS_DIALOG_ID);
+
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		downloadAsyncTask.showProgress(true);
+//		downloadAsyncTask.showProgress(true);
+		showDialog(PROGRESS_DIALOG_ID);
+	}
+
+	@Override
+	public void onProgress(int val, int maxVal) {
+		if (pd != null) {
+			pd.setMax(maxVal);
+			pd.setProgress(val);
+		}
 	}
 
 	@Override

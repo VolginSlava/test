@@ -147,6 +147,7 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 
 	public void showProgress(boolean showProgress) {
 		this.showProgress = showProgress;
+		this.showProgress = false;
 
 		if (showProgress) {
 			if (needToShowProgressDialog()) {
