@@ -34,7 +34,6 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 			Log.d(ASYNC_TASK, "", e);
 			return fakeDownload(urls[0]);
 		}
-		// return fakeDownload(urls[0]);
 	}
 
 	private byte[] fakeDownload(URL url) {
