@@ -8,14 +8,20 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 public class HomeActivity extends Activity implements ProgressListener {
+	private static final String IS_PLAYING_KEY = "isPlaying";
+	private static final String DOWNLOAD_ASYNC_TASK_KEY = "downloadAsyncTask";
+
 	private static final int PROGRESS_DIALOG_ID = 1;
 	private static final String FILE_URL_STRING = "https://upload.wikimedia.org/wikipedia/commons/6/66/Whitenoisesound.ogg";
 	private static final URL FILE_URL;
@@ -33,6 +39,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 	private DownloadAsyncTask downloadAsyncTask;
 	private ProgressDialog pd;
 	private Button playButton;
+	private boolean isPlaying;
 	private TextView label;
 
 	@SuppressWarnings("deprecation")
@@ -42,21 +49,44 @@ public class HomeActivity extends Activity implements ProgressListener {
 		setContentView(R.layout.activity_home);
 		
 		playButton = (Button) findViewById(R.id.v_play_button);
+		playButton.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				if (isPlaying()) {
+					setIdleState();
+				} else {
+					setPlayingState();
+				}
+				Log.d(ACTIVITY_SERVICE, "OnPlayButtonEvent. IsPlaying: "
+						+ isPlaying());
+			}
+		});
+
 		label = (TextView) findViewById(R.id.v_status_label);
 
 		if (getLastNonConfigurationInstance() == null) {
 			downloadAsyncTask = new DownloadAsyncTask();
 			downloadAsyncTask.execute(FILE_URL);
 		} else {
-			downloadAsyncTask = (DownloadAsyncTask) getLastNonConfigurationInstance();
-			onScreenRotationLogging();
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
+
+			downloadAsyncTask = (DownloadAsyncTask) map
+					.get(DOWNLOAD_ASYNC_TASK_KEY);
+			isPlaying = (Boolean) map.get(IS_PLAYING_KEY);
+
+			onScreenRotationLogging(map);
 		}
 	}
 
-	private void onScreenRotationLogging() {
-		String msg = "getLastNonConfigurationInstance != null. Current state: "
-				+ downloadAsyncTask.getStatus();
-		if (downloadAsyncTask.getStatus() == Status.FINISHED) {
+	private boolean isPlaying() {
+		return isPlaying;
+	}
+
+	private void onScreenRotationLogging(HashMap<String, Object> map) {
+		String msg = map.toString();
+		if (isDownloadingFinished()) {
 			try {
 				msg += ". File size: " + downloadAsyncTask.get().length;
 			} catch (InterruptedException e) {
@@ -103,8 +133,13 @@ public class HomeActivity extends Activity implements ProgressListener {
 	@Override
 	@Deprecated
 	public Object onRetainNonConfigurationInstance() {
-		Log.d(ACTIVITY_SERVICE, "onRetainNonConfigurationInstance called");
-		return downloadAsyncTask;
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		map.put(DOWNLOAD_ASYNC_TASK_KEY, downloadAsyncTask);
+		map.put(IS_PLAYING_KEY, isPlaying);
+
+		Log.d(ACTIVITY_SERVICE, map
+				+ " onRetainNonConfigurationInstance called.");
+		return map;
 	}
 
 
@@ -131,6 +166,8 @@ public class HomeActivity extends Activity implements ProgressListener {
 			showDialog(PROGRESS_DIALOG_ID);
 
 			setDownloadingState();
+		} else if (isPlaying()){
+			setPlayingState();
 		} else {
 			setIdleState();
 		}
@@ -138,12 +175,14 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 	private void setDownloadingState() {
 		playButton.setEnabled(false);
+		isPlaying = false;
 		label.setText(R.string.home_status_label_downloading);
 	}
 
 	private void setIdleState() {
 		playButton.setEnabled(true);
 		playButton.setText(R.string.home_play_button_play);
+		isPlaying = false;
 
 		label.setText(R.string.home_status_label_idle);
 	}
@@ -151,14 +190,10 @@ public class HomeActivity extends Activity implements ProgressListener {
 	private void setPlayingState() {
 		playButton.setEnabled(true);
 		playButton.setText(R.string.home_play_button_pause);
+		isPlaying = true;
 
 		label.setText(R.string.home_status_label_playing);
 	}
-
-	// private boolean needToShowProgressDialog() {
-	// return downloadAsyncTask != null
-	// && downloadAsyncTask.getStatus() != Status.FINISHED;
-	// }
 
 	private boolean isDownloadingFinished() {
 		return downloadAsyncTask != null

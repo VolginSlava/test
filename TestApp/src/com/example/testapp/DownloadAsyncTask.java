@@ -108,4 +108,9 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 			pl.onPostExecute();
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "Current state: " + getStatus();
+	}
 }
