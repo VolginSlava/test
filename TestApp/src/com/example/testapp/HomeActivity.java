@@ -3,6 +3,9 @@ package com.example.testapp;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,17 +16,25 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 public class HomeActivity extends Activity implements ProgressListener {
+	private static final String MEDIA_PLAYER_KEY = "mediaPlayer";
 	private static final String IS_PLAYING_KEY = "isPlaying";
 	private static final String DOWNLOAD_ASYNC_TASK_KEY = "downloadAsyncTask";
 
 	private static final int PROGRESS_DIALOG_ID = 1;
-	private static final String FILE_URL_STRING = "https://upload.wikimedia.org/wikipedia/commons/6/66/Whitenoisesound.ogg";
+	// private static final String FILE_URL_STRING =
+	// "https://upload.wikimedia.org/wikipedia/commons/6/66/Whitenoisesound.ogg";
+	private static final String FILE_URL_STRING = "http://www.audiocheck.net/download.php?filename=Audio/audiocheck.net_white_88k_-3dBFS.wav";
 	private static final URL FILE_URL;
 	static {
 		URL url;
@@ -42,12 +53,21 @@ public class HomeActivity extends Activity implements ProgressListener {
 	private boolean isPlaying;
 	private TextView label;
 
+	private MediaPlayer mediaPlayer;
+
 	@SuppressWarnings("deprecation")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 		
+		{
+			Integer val = Integer.parseInt(System.getProperty("myProp", "0"));
+			val += 1;
+			System.setProperty("myProp", val.toString());
+			Log.d(ACTIVITY_SERVICE, val.toString());
+		}
+
 		playButton = (Button) findViewById(R.id.v_play_button);
 		playButton.setOnClickListener(new OnClickListener() {
 
@@ -55,8 +75,29 @@ public class HomeActivity extends Activity implements ProgressListener {
 			public void onClick(View v) {
 				if (isPlaying()) {
 					setIdleState();
+					stopPlaying(mediaPlayer);
 				} else {
 					setPlayingState();
+
+					mediaPlayer = new MediaPlayer();
+					AsyncTask<MediaPlayer, Integer, MediaPlayer> at = new AsyncTask<MediaPlayer, Integer, MediaPlayer>() {
+
+						@Override
+						protected MediaPlayer doInBackground(
+								MediaPlayer... params) {
+							MediaPlayer player = params[0];
+							startPlaying(player);
+							Log.d(AUDIO_SERVICE, "Music started.");
+							return player;
+						}
+
+						@Override
+						protected void onPostExecute(MediaPlayer result) {
+							super.onPostExecute(result);
+							result.start();
+						}
+					};
+					at.execute(mediaPlayer);
 				}
 				Log.d(ACTIVITY_SERVICE, "OnPlayButtonEvent. IsPlaying: "
 						+ isPlaying());
@@ -74,7 +115,9 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 			downloadAsyncTask = (DownloadAsyncTask) map
 					.get(DOWNLOAD_ASYNC_TASK_KEY);
-			isPlaying = (Boolean) map.get(IS_PLAYING_KEY);
+
+			mediaPlayer = (MediaPlayer) map.get(MEDIA_PLAYER_KEY);
+			// isPlaying = (Boolean) map.get(IS_PLAYING_KEY);
 
 			onScreenRotationLogging(map);
 		}
@@ -88,7 +131,8 @@ public class HomeActivity extends Activity implements ProgressListener {
 		String msg = map.toString();
 		if (isDownloadingFinished()) {
 			try {
-				msg += ". File size: " + downloadAsyncTask.get().length;
+				msg += String.format(". File size: %,d bytes.",
+						downloadAsyncTask.get().length);
 			} catch (InterruptedException e) {
 				Log.e(ACTIVITY_SERVICE, "", e);
 			} catch (ExecutionException e) {
@@ -96,6 +140,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 			}
 		}
 		Log.d(ACTIVITY_SERVICE, msg);
+
 	}
 
 	@Override
@@ -135,7 +180,8 @@ public class HomeActivity extends Activity implements ProgressListener {
 	public Object onRetainNonConfigurationInstance() {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(DOWNLOAD_ASYNC_TASK_KEY, downloadAsyncTask);
-		map.put(IS_PLAYING_KEY, isPlaying);
+		map.put(MEDIA_PLAYER_KEY, mediaPlayer);
+		// map.put(IS_PLAYING_KEY, isPlaying);
 
 		Log.d(ACTIVITY_SERVICE, map
 				+ " onRetainNonConfigurationInstance called.");
@@ -163,9 +209,8 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 		if (!isDownloadingFinished()) {
 			downloadAsyncTask.addProgressListener(this);
-			showDialog(PROGRESS_DIALOG_ID);
-
 			setDownloadingState();
+			showDialog(PROGRESS_DIALOG_ID);
 		} else if (isPlaying()){
 			setPlayingState();
 		} else {
@@ -211,10 +256,10 @@ public class HomeActivity extends Activity implements ProgressListener {
 	@SuppressWarnings("deprecation")
 	@Override
 	public void onPostExecute() {
+		setIdleState();
+
 		dismissDialog(PROGRESS_DIALOG_ID);
 		removeDialog(PROGRESS_DIALOG_ID);
-
-		setIdleState();
 	}
 
 	@Override
@@ -234,6 +279,75 @@ public class HomeActivity extends Activity implements ProgressListener {
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putBoolean(IS_PLAYING_KEY, isPlaying);
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		isPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY, false);
+
+		Log.d(ACTIVITY_SERVICE, "onRestoreInstanceState: " + savedInstanceState);
+	}
+
+	private void startPlaying(MediaPlayer mediaPlayer) {
+		File temp = null;
+		try {
+			temp = File.createTempFile("temp", "mp3", getCacheDir());
+			temp.deleteOnExit();
+		} catch (IOException e) {
+			Log.d(ACTIVITY_SERVICE,
+					"Exception while trying to create temp file.", e);
+		}
+
+		try {
+			FileOutputStream out = new FileOutputStream(temp);
+			out.write(downloadAsyncTask.get());
+			out.close();
+		} catch (FileNotFoundException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		} catch (IOException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		} catch (InterruptedException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		} catch (ExecutionException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		}
+
+
+		try {
+			FileInputStream in = new FileInputStream(temp);
+			mediaPlayer.setDataSource(in.getFD());
+			mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+		} catch (IllegalArgumentException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		} catch (IllegalStateException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		} catch (IOException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		}
+
+		try {
+			mediaPlayer.prepare();
+		} catch (IllegalStateException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		} catch (IOException e) {
+			Log.d(ACTIVITY_SERVICE, "", e);
+		}
+		// mediaPlayer.start();
+	}
+
+	private void stopPlaying(MediaPlayer mediaPlayer) {
+		if (mediaPlayer != null) {
+			mediaPlayer.release();
+			mediaPlayer = null;
+		}
 	}
 }
 

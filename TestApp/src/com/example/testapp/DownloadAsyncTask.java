@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashSet;
+import java.util.Random;
 
 class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 	private static final String ASYNC_TASK = "DownloadAsyncTask";
@@ -27,16 +28,22 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 
 	@Override
 	protected byte[] doInBackground(URL... urls) {
-		try {
-			return download(urls[0]);
-		} catch (IOException e) {
-			Log.d(ASYNC_TASK, "", e);
-			return fakeDownload(urls[0]);
-		}
+		// try {
+		// return download(urls[0]);
+		// } catch (IOException e) {
+		// Log.d(ASYNC_TASK, "", e);
+		// return fakeDownload(urls[0]);
+		// }
+		return fakeDownload(urls[0]);
 	}
 
 	private byte[] fakeDownload(URL url) {
 		byte[] result = new byte[1024 * 1024];
+		Random r = new Random();
+		for (int i = 0; i < result.length; i++) {
+			result[i] = (byte) r.nextInt();
+		}
+
 		for (int i = 0; i <= MAX_PROGRESS; i += MAX_PROGRESS / 100) {
 			try {
 				Thread.sleep(25);
@@ -101,8 +108,8 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 	@Override
 	protected void onPostExecute(byte[] result) {
 		super.onPostExecute(result);
-		Log.d(ASYNC_TASK, "DownloadAsyncTash: end. File size: "
-				+ result.length);
+		Log.d(ASYNC_TASK, String.format(
+				"DownloadAsyncTash: end. File size: %,d bytes.", result.length));
 
 		for (ProgressListener pl : progressListeners) {
 			pl.onPostExecute();
