@@ -61,13 +61,6 @@ public class HomeActivity extends Activity implements ProgressListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 		
-		{
-			Integer val = Integer.parseInt(System.getProperty("myProp", "0"));
-			val += 1;
-			System.setProperty("myProp", val.toString());
-			Log.d(ACTIVITY_SERVICE, val.toString());
-		}
-
 		playButton = (Button) findViewById(R.id.v_play_button);
 		playButton.setOnClickListener(new OnClickListener() {
 
@@ -87,7 +80,6 @@ public class HomeActivity extends Activity implements ProgressListener {
 								MediaPlayer... params) {
 							MediaPlayer player = params[0];
 							startPlaying(player);
-							Log.d(AUDIO_SERVICE, "Music started.");
 							return player;
 						}
 
@@ -95,6 +87,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 						protected void onPostExecute(MediaPlayer result) {
 							super.onPostExecute(result);
 							result.start();
+							Log.d(AUDIO_SERVICE, "Music started.");
 						}
 					};
 					at.execute(mediaPlayer);
@@ -115,9 +108,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 			downloadAsyncTask = (DownloadAsyncTask) map
 					.get(DOWNLOAD_ASYNC_TASK_KEY);
-
 			mediaPlayer = (MediaPlayer) map.get(MEDIA_PLAYER_KEY);
-			// isPlaying = (Boolean) map.get(IS_PLAYING_KEY);
 
 			onScreenRotationLogging(map);
 		}
@@ -181,7 +172,6 @@ public class HomeActivity extends Activity implements ProgressListener {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(DOWNLOAD_ASYNC_TASK_KEY, downloadAsyncTask);
 		map.put(MEDIA_PLAYER_KEY, mediaPlayer);
-		// map.put(IS_PLAYING_KEY, isPlaying);
 
 		Log.d(ACTIVITY_SERVICE, map
 				+ " onRetainNonConfigurationInstance called.");
@@ -301,7 +291,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 			temp = File.createTempFile("temp", "mp3", getCacheDir());
 			temp.deleteOnExit();
 		} catch (IOException e) {
-			Log.d(ACTIVITY_SERVICE,
+			Log.e(ACTIVITY_SERVICE,
 					"Exception while trying to create temp file.", e);
 		}
 
@@ -310,13 +300,13 @@ public class HomeActivity extends Activity implements ProgressListener {
 			out.write(downloadAsyncTask.get());
 			out.close();
 		} catch (FileNotFoundException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		} catch (IOException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		} catch (InterruptedException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		} catch (ExecutionException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		}
 
 
@@ -324,23 +314,22 @@ public class HomeActivity extends Activity implements ProgressListener {
 			FileInputStream in = new FileInputStream(temp);
 			mediaPlayer.setDataSource(in.getFD());
 			mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
+			in.close();
 		} catch (IllegalArgumentException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		} catch (IllegalStateException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		} catch (IOException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		}
 
 		try {
 			mediaPlayer.prepare();
 		} catch (IllegalStateException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		} catch (IOException e) {
-			Log.d(ACTIVITY_SERVICE, "", e);
+			Log.e(ACTIVITY_SERVICE, "", e);
 		}
-		// mediaPlayer.start();
 	}
 
 	private void stopPlaying(MediaPlayer mediaPlayer) {

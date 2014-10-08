@@ -28,13 +28,13 @@ class DownloadAsyncTask extends AsyncTask<URL, Integer, byte[]> {
 
 	@Override
 	protected byte[] doInBackground(URL... urls) {
-		// try {
-		// return download(urls[0]);
-		// } catch (IOException e) {
-		// Log.d(ASYNC_TASK, "", e);
+		try {
+			return download(urls[0]);
+		} catch (IOException e) {
+			Log.d(ASYNC_TASK, "", e);
+			return fakeDownload(urls[0]);
+		}
 		// return fakeDownload(urls[0]);
-		// }
-		return fakeDownload(urls[0]);
 	}
 
 	private byte[] fakeDownload(URL url) {
