@@ -28,12 +28,9 @@ import java.util.concurrent.ExecutionException;
 
 public class HomeActivity extends Activity implements ProgressListener {
 	private static final String MEDIA_PLAYER_KEY = "mediaPlayer";
-	private static final String IS_PLAYING_KEY = "isPlaying";
 	private static final String DOWNLOAD_ASYNC_TASK_KEY = "downloadAsyncTask";
 
 	private static final int PROGRESS_DIALOG_ID = 1;
-	// private static final String FILE_URL_STRING =
-	// "https://upload.wikimedia.org/wikipedia/commons/6/66/Whitenoisesound.ogg";
 	private static final String FILE_URL_STRING = "http://www.audiocheck.net/download.php?filename=Audio/audiocheck.net_white_88k_-3dBFS.wav";
 	private static final URL FILE_URL;
 	static {
@@ -50,7 +47,6 @@ public class HomeActivity extends Activity implements ProgressListener {
 	private DownloadAsyncTask downloadAsyncTask;
 	private ProgressDialog pd;
 	private Button playButton;
-	private boolean isPlaying;
 	private TextView label;
 
 	private MediaPlayer mediaPlayer;
@@ -68,29 +64,17 @@ public class HomeActivity extends Activity implements ProgressListener {
 			public void onClick(View v) {
 				if (isPlaying()) {
 					setIdleState();
-					stopPlaying(mediaPlayer);
+
+					pausePlaying(mediaPlayer);
 				} else {
 					setPlayingState();
 
-					mediaPlayer = new MediaPlayer();
-					AsyncTask<MediaPlayer, Integer, MediaPlayer> at = new AsyncTask<MediaPlayer, Integer, MediaPlayer>() {
-
-						@Override
-						protected MediaPlayer doInBackground(
-								MediaPlayer... params) {
-							MediaPlayer player = params[0];
-							startPlaying(player);
-							return player;
-						}
-
-						@Override
-						protected void onPostExecute(MediaPlayer result) {
-							super.onPostExecute(result);
-							result.start();
-							Log.d(AUDIO_SERVICE, "Music started.");
-						}
-					};
-					at.execute(mediaPlayer);
+					if (mediaPlayer == null) {
+						mediaPlayer = new MediaPlayer();
+						initializeAndStartPlayer(mediaPlayer);
+					} else {
+						startPlaying(mediaPlayer);
+					}
 				}
 				Log.d(ACTIVITY_SERVICE, "OnPlayButtonEvent. IsPlaying: "
 						+ isPlaying());
@@ -115,7 +99,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 	}
 
 	private boolean isPlaying() {
-		return isPlaying;
+		return mediaPlayer != null && mediaPlayer.isPlaying();
 	}
 
 	private void onScreenRotationLogging(HashMap<String, Object> map) {
@@ -210,14 +194,12 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 	private void setDownloadingState() {
 		playButton.setEnabled(false);
-		isPlaying = false;
 		label.setText(R.string.home_status_label_downloading);
 	}
 
 	private void setIdleState() {
 		playButton.setEnabled(true);
 		playButton.setText(R.string.home_play_button_play);
-		isPlaying = false;
 
 		label.setText(R.string.home_status_label_idle);
 	}
@@ -225,7 +207,6 @@ public class HomeActivity extends Activity implements ProgressListener {
 	private void setPlayingState() {
 		playButton.setEnabled(true);
 		playButton.setText(R.string.home_play_button_pause);
-		isPlaying = true;
 
 		label.setText(R.string.home_status_label_playing);
 	}
@@ -250,7 +231,93 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 		dismissDialog(PROGRESS_DIALOG_ID);
 		removeDialog(PROGRESS_DIALOG_ID);
+
 	}
+
+	private void initializePlayer(MediaPlayer mediaPlayer, byte[] file) {
+		File temp = null;
+		try {
+			temp = File.createTempFile("temp", "dat", getCacheDir());
+			// temp.deleteOnExit();
+		} catch (IOException e) {
+			Log.e(ACTIVITY_SERVICE,
+					"Exception while trying to create temp file.", e);
+		}
+	
+		try {
+			FileOutputStream out = new FileOutputStream(temp);
+			out.write(file);
+			out.close();
+		} catch (FileNotFoundException e) {
+			Log.e(ACTIVITY_SERVICE, "", e);
+		} catch (IOException e) {
+			Log.e(ACTIVITY_SERVICE, "", e);
+		}
+	
+		try {
+			FileInputStream in = new FileInputStream(temp);
+			mediaPlayer.setDataSource(in.getFD());
+			mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+			in.close();
+		} catch (IllegalArgumentException e) {
+			Log.e(ACTIVITY_SERVICE, "", e);
+		} catch (IllegalStateException e) {
+			Log.e(ACTIVITY_SERVICE, "", e);
+		} catch (IOException e) {
+			Log.e(ACTIVITY_SERVICE, "", e);
+		}
+	
+		try {
+			mediaPlayer.prepare();
+		} catch (IllegalStateException e) {
+			Log.e(ACTIVITY_SERVICE, "", e);
+		} catch (IOException e) {
+			Log.e(ACTIVITY_SERVICE, "", e);
+		}
+	}
+
+	private void startPlaying(MediaPlayer mediaPlayer) {
+		mediaPlayer.start();
+	}
+
+	private void initializeAndStartPlayer(MediaPlayer mediaPlayer) {
+		AsyncTask<MediaPlayer, Integer, MediaPlayer> at = new AsyncTask<MediaPlayer, Integer, MediaPlayer>() {
+	
+			@Override
+			protected MediaPlayer doInBackground(MediaPlayer... params) {
+				MediaPlayer player = params[0];
+				try {
+					initializePlayer(player, downloadAsyncTask.get());
+				} catch (InterruptedException e) {
+					Log.e(ACTIVITY_SERVICE, "", e);
+				} catch (ExecutionException e) {
+					Log.e(ACTIVITY_SERVICE, "", e);
+				}
+				return player;
+			}
+	
+			@Override
+			protected void onPostExecute(MediaPlayer result) {
+				super.onPostExecute(result);
+				startPlaying(result);
+				Log.d(AUDIO_SERVICE, "Music started.");
+			}
+		};
+		at.execute(mediaPlayer);
+	}
+
+	private void pausePlaying(MediaPlayer mediaPlayer) {
+		if (mediaPlayer.isPlaying()) {
+			mediaPlayer.pause();
+		}
+	}
+
+	// private void stopPlaying(MediaPlayer mediaPlayer) {
+	// if (mediaPlayer != null) {
+	// mediaPlayer.release();
+	// mediaPlayer = null;
+	// }
+	// }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -271,73 +338,6 @@ public class HomeActivity extends Activity implements ProgressListener {
 		return super.onOptionsItemSelected(item);
 	}
 
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putBoolean(IS_PLAYING_KEY, isPlaying);
-	}
-
-	@Override
-	protected void onRestoreInstanceState(Bundle savedInstanceState) {
-		super.onRestoreInstanceState(savedInstanceState);
-		isPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY, false);
-
-		Log.d(ACTIVITY_SERVICE, "onRestoreInstanceState: " + savedInstanceState);
-	}
-
-	private void startPlaying(MediaPlayer mediaPlayer) {
-		File temp = null;
-		try {
-			temp = File.createTempFile("temp", "mp3", getCacheDir());
-			temp.deleteOnExit();
-		} catch (IOException e) {
-			Log.e(ACTIVITY_SERVICE,
-					"Exception while trying to create temp file.", e);
-		}
-
-		try {
-			FileOutputStream out = new FileOutputStream(temp);
-			out.write(downloadAsyncTask.get());
-			out.close();
-		} catch (FileNotFoundException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		} catch (IOException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		} catch (InterruptedException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		} catch (ExecutionException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		}
-
-
-		try {
-			FileInputStream in = new FileInputStream(temp);
-			mediaPlayer.setDataSource(in.getFD());
-			mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-			in.close();
-		} catch (IllegalArgumentException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		} catch (IllegalStateException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		} catch (IOException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		}
-
-		try {
-			mediaPlayer.prepare();
-		} catch (IllegalStateException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		} catch (IOException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-		}
-	}
-
-	private void stopPlaying(MediaPlayer mediaPlayer) {
-		if (mediaPlayer != null) {
-			mediaPlayer.release();
-			mediaPlayer = null;
-		}
-	}
 }
 
 
