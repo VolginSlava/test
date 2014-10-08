@@ -9,7 +9,10 @@
     <string name="splash_image_description">image</string>
     
     
-    <string name="home_play_button">Play</string>
+    <string name="home_play_button_play">Play</string>
+    <string name="home_play_button_pause">Pause</string>
+    
+    
     <string name="home_status_label_idle">Idle</string>
     <string name="home_status_label_downloading">Downloading</string>
     <string name="home_status_label_playing">Playing</string>

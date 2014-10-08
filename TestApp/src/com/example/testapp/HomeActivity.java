@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.TextView;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -30,7 +32,8 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 	private DownloadAsyncTask downloadAsyncTask;
 	private ProgressDialog pd;
-
+	private Button playButton;
+	private TextView label;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -38,6 +41,9 @@ public class HomeActivity extends Activity implements ProgressListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 		
+		playButton = (Button) findViewById(R.id.v_play_button);
+		label = (TextView) findViewById(R.id.v_status_label);
+
 		if (getLastNonConfigurationInstance() == null) {
 			downloadAsyncTask = new DownloadAsyncTask();
 			downloadAsyncTask.execute(FILE_URL);
@@ -109,7 +115,7 @@ public class HomeActivity extends Activity implements ProgressListener {
 
 		if (downloadAsyncTask != null) {
 			downloadAsyncTask.removeProgressListener(this);
-			if (downloadAsyncTask.getStatus() != Status.FINISHED) {
+			if (!isDownloadingFinished()) {
 				dismissDialog(PROGRESS_DIALOG_ID);
 			}
 		}
@@ -120,15 +126,43 @@ public class HomeActivity extends Activity implements ProgressListener {
 	protected void onResume() {
 		super.onResume();
 
-		if (needToShowProgressDialog()) {
+		if (!isDownloadingFinished()) {
 			downloadAsyncTask.addProgressListener(this);
 			showDialog(PROGRESS_DIALOG_ID);
+
+			setDownloadingState();
+		} else {
+			setIdleState();
 		}
 	}
 
-	private boolean needToShowProgressDialog() {
+	private void setDownloadingState() {
+		playButton.setEnabled(false);
+		label.setText(R.string.home_status_label_downloading);
+	}
+
+	private void setIdleState() {
+		playButton.setEnabled(true);
+		playButton.setText(R.string.home_play_button_play);
+
+		label.setText(R.string.home_status_label_idle);
+	}
+
+	private void setPlayingState() {
+		playButton.setEnabled(true);
+		playButton.setText(R.string.home_play_button_pause);
+
+		label.setText(R.string.home_status_label_playing);
+	}
+
+	// private boolean needToShowProgressDialog() {
+	// return downloadAsyncTask != null
+	// && downloadAsyncTask.getStatus() != Status.FINISHED;
+	// }
+
+	private boolean isDownloadingFinished() {
 		return downloadAsyncTask != null
-				&& downloadAsyncTask.getStatus() != Status.FINISHED;
+				&& downloadAsyncTask.getStatus() == Status.FINISHED;
 	}
 
 	@Override
@@ -144,6 +178,8 @@ public class HomeActivity extends Activity implements ProgressListener {
 	public void onPostExecute() {
 		dismissDialog(PROGRESS_DIALOG_ID);
 		removeDialog(PROGRESS_DIALOG_ID);
+
+		setIdleState();
 	}
 
 	@Override

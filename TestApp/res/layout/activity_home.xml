@@ -17,6 +17,6 @@
 		android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"
 		android:layout_centerHorizontal="true"
-		android:text="@string/home_play_button" />
+		android:text="@string/home_play_button_play" />
 
 </RelativeLayout>

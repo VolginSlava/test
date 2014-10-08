@@ -1248,10 +1248,11 @@ containing a value of this type.
         public static final int abc_shareactionprovider_share_with_application=0x7f0a000b;
         public static final int action_settings=0x7f0a000e;
         public static final int app_name=0x7f0a000d;
-        public static final int home_play_button=0x7f0a0012;
-        public static final int home_status_label_downloading=0x7f0a0014;
-        public static final int home_status_label_idle=0x7f0a0013;
-        public static final int home_status_label_playing=0x7f0a0015;
+        public static final int home_play_button_pause=0x7f0a0013;
+        public static final int home_play_button_play=0x7f0a0012;
+        public static final int home_status_label_downloading=0x7f0a0015;
+        public static final int home_status_label_idle=0x7f0a0014;
+        public static final int home_status_label_playing=0x7f0a0016;
         public static final int splash=0x7f0a0010;
         public static final int splash_image_description=0x7f0a0011;
         public static final int title_activity_splash=0x7f0a000f;
