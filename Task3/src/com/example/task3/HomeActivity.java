@@ -27,7 +27,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 
-import com.example.task3.FileLoader.OnProgressListener;
+import com.example.task3.FileLoader.ProgressListener;
+import com.example.task3.MyDialogFragment.CancelListener;
 
 public class HomeActivity extends Activity {
 
@@ -36,6 +37,7 @@ public class HomeActivity extends Activity {
 	private static final String FILE_URL_STRING = "http://www.audiocheck.net/download.php?filename=Audio/audiocheck.net_white_88k_-3dBFS.wav";
 	private static final URL FILE_URL;
 	private static final int FILE_LOADER_ID = 1;
+	private static final String DOWNLOADED_FILE_KEY = "downloadedMusicFile";
 	static {
 		URL url;
 		try {
@@ -55,8 +57,9 @@ public class HomeActivity extends Activity {
 	private MediaPlayer mediaPlayer;
 
 	private StatesUtils statesUtils = new StatesUtils();
-	private MediaPlayerUtils mediaPlayerUtils = new MediaPlayerUtils();
+	private DialogUtils dialogUtils = new DialogUtils();
 	private LoaderUtils loaderUtils = new LoaderUtils();
+	private MediaPlayerUtils mediaPlayerUtils = new MediaPlayerUtils();
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -80,52 +83,115 @@ public class HomeActivity extends Activity {
 
 					if (mediaPlayer == null) {
 						mediaPlayer = new MediaPlayer();
-						mediaPlayerUtils.initializeAndStartPlayer(mediaPlayer);
+						mediaPlayerUtils.initializeAndStartPlayer(mediaPlayer,
+								downloadedMusicFile);
 					} else {
 						mediaPlayerUtils.startPlaying(mediaPlayer);
 					}
 				}
-				Log.d(ACTIVITY_SERVICE, "OnPlayButtonEvent. IsPlaying: "
+				Log.d(ACTIVITY_SERVICE,
+						"HomeActivity # OnPlayButtonEvent. IsPlaying: "
 						+ mediaPlayerUtils.isPlaying());
 			}
 		});
 
-		loaderManager = getLoaderManager();
-		Bundle bundle = new Bundle();
-		bundle.putSerializable(FILE_URL_KEY, FILE_URL);
-		loaderManager.initLoader(FILE_LOADER_ID, bundle, loaderUtils);
-
-		if (downloadedMusicFile == null) {
-			statesUtils.setDownloadingState();
-		}
-
 		if (getLastNonConfigurationInstance() != null) {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
+			downloadedMusicFile = (byte[]) map.get(DOWNLOADED_FILE_KEY);
 			mediaPlayer = (MediaPlayer) map.get(MEDIA_PLAYER_KEY);
+		}
+
+		loaderManager = getLoaderManager();
+
+		if (downloadedMusicFile == null) {
+			Bundle bundle = new Bundle();
+			bundle.putSerializable(FILE_URL_KEY, FILE_URL);
+			loaderManager.initLoader(FILE_LOADER_ID, bundle, loaderUtils);
 		}
 	}
 
 	@Override
-	protected void onStart() {
-		super.onStart();
+	protected void onResume() {
+		super.onResume();
 
-		((FileLoader) loaderManager.<byte[]> getLoader(FILE_LOADER_ID))
-				.addOnProgressListener(loaderUtils);
-		Log.d(ACTIVITY_SERVICE,
-				(downloadedMusicFile != null ? String.format("%,d bytes.",
-						downloadedMusicFile.length) : "null"));
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onResume");
+
+		if (downloadedMusicFile == null) {
+			statesUtils.setDownloadingState();
+		} else if (mediaPlayerUtils.isPlaying()) {
+			statesUtils.setPlayingState();
+		} else {
+			statesUtils.setIdleState();
+		}
+
+		FileLoader fileLoader = (FileLoader) loaderManager
+				.<byte[]> getLoader(FILE_LOADER_ID);
+		if (fileLoader != null) {
+			fileLoader.addProgressListener(loaderUtils);
+		}
+		progressDialog.addCancelListener(dialogUtils);
 	}
 
 	@Override
-	protected void onStop() {
-		super.onStop();
+	protected void onPause() {
+		super.onPause();
 
-		((FileLoader) loaderManager.<byte[]> getLoader(FILE_LOADER_ID))
-				.removeOnProgressListener(loaderUtils);
-		Log.d(ACTIVITY_SERVICE,
-				(downloadedMusicFile != null ? String.format("%,d bytes.",
-						downloadedMusicFile.length) : "null"));
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause()");
+
+		FileLoader fileLoader = (FileLoader) loaderManager
+				.<byte[]> getLoader(FILE_LOADER_ID);
+		if (fileLoader != null) {
+			fileLoader.removeProgressListener(loaderUtils);
+		}
+		progressDialog.addCancelListener(dialogUtils);
+
+		dialogUtils.hideProgressDialog();
+	}
+
+	// @Override
+	// protected void onStart() {
+	// super.onStart();
+	//
+	// Log.d(ACTIVITY_SERVICE, "HomeActivity # onStart");
+	// Log.d(ACTIVITY_SERVICE,
+	// "Downloaded file: "
+	// + (downloadedMusicFile != null ? String.format(
+	// "%,d bytes.", downloadedMusicFile.length)
+	// : "null"));
+	// Log.d(ACTIVITY_SERVICE,
+	// "Loader: " + loaderManager.getLoader(FILE_LOADER_ID));
+	// }
+	//
+	// @Override
+	// protected void onStop() {
+	// super.onStop();
+	//
+	// Log.d(ACTIVITY_SERVICE, "HomeActivity # onStop");
+	// Log.d(ACTIVITY_SERVICE,
+	// "Downloaded file: "
+	// + (downloadedMusicFile != null ? String.format(
+	// "%,d bytes.", downloadedMusicFile.length)
+	// : "null"));
+	// }
+	//
+	// @Override
+	// protected void onDestroy() {
+	// super.onDestroy();
+	//
+	// Log.d(ACTIVITY_SERVICE, "HomeActivity # onDestroy");
+	// }
+
+	@Override
+	@Deprecated
+	public Object onRetainNonConfigurationInstance() {
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		map.put(DOWNLOADED_FILE_KEY, downloadedMusicFile);
+		map.put(MEDIA_PLAYER_KEY, mediaPlayer);
+	
+		Log.d(ACTIVITY_SERVICE, map
+				+ " onRetainNonConfigurationInstance called.");
+		return map;
 	}
 
 	@Override
@@ -147,97 +213,33 @@ public class HomeActivity extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 
-	@Override
-	@Deprecated
-	public Object onRetainNonConfigurationInstance() {
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put(MEDIA_PLAYER_KEY, mediaPlayer);
-
-		Log.d(ACTIVITY_SERVICE, map
-				+ " onRetainNonConfigurationInstance called.");
-		return map;
-	}
-
-	private class MediaPlayerUtils {
-
-		private void initializePlayer(MediaPlayer mediaPlayer, byte[] file) {
-			File temp = null;
-			try {
-				temp = File.createTempFile("temp", "dat", getCacheDir());
-				// temp.deleteOnExit();
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE,
-						"Exception while trying to create temp file.", e);
-			}
-
-			try {
-				FileOutputStream out = new FileOutputStream(temp);
-				out.write(file);
-				out.close();
-			} catch (FileNotFoundException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			}
-
-			try {
-				FileInputStream in = new FileInputStream(temp);
-				mediaPlayer.setDataSource(in.getFD());
-				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-				in.close();
-			} catch (IllegalArgumentException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IllegalStateException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			}
-
-			try {
-				mediaPlayer.prepare();
-			} catch (IllegalStateException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			}
-		}
-
-		private void initializeAndStartPlayer(MediaPlayer mediaPlayer) {
-			AsyncTask<MediaPlayer, Integer, MediaPlayer> at = new AsyncTask<MediaPlayer, Integer, MediaPlayer>() {
-
-				@Override
-				protected MediaPlayer doInBackground(MediaPlayer... players) {
-					MediaPlayer player = players[0];
-					initializePlayer(player, downloadedMusicFile);
-					return player;
-				}
-
-				@Override
-				protected void onPostExecute(MediaPlayer result) {
-					super.onPostExecute(result);
-					startPlaying(result);
-					Log.d(AUDIO_SERVICE, "Music started.");
-				}
-			};
-			at.execute(mediaPlayer);
-		}
-
-		private void startPlaying(MediaPlayer mediaPlayer) {
-			mediaPlayer.start();
-		}
-
-		private void pausePlaying(MediaPlayer mediaPlayer) {
-			if (mediaPlayer.isPlaying()) {
-				mediaPlayer.pause();
-			}
-		}
-
-		private boolean isPlaying() {
-			return mediaPlayer != null && mediaPlayer.isPlaying();
-		}
-	}
-
 	private class StatesUtils {
+	
+		private void setDownloadingState() {
+			playButton.setEnabled(false);
+			label.setText(R.string.home_status_label_downloading);
+		
+			dialogUtils.showProgressDialog();
+		}
+	
+		private void setIdleState() {
+			playButton.setEnabled(true);
+			playButton.setText(R.string.home_play_button_play);
+		
+			label.setText(R.string.home_status_label_idle);
+		
+			dialogUtils.hideProgressDialog();
+		}
+	
+		private void setPlayingState() {
+			playButton.setEnabled(true);
+			playButton.setText(R.string.home_play_button_pause);
+		
+			label.setText(R.string.home_status_label_playing);
+		}
+	}
+
+	private class DialogUtils implements CancelListener {
 
 		private void showProgressDialog() {
 			progressDialog.show(getFragmentManager(),
@@ -259,38 +261,16 @@ public class HomeActivity extends Activity {
 			// fragmentTransaction.commit();
 		}
 
-		private void setDownloadingState() {
-			playButton.setEnabled(false);
-			label.setText(R.string.home_status_label_downloading);
-		
-			showProgressDialog();
-		}
-
-		private void setIdleState() {
-			playButton.setEnabled(true);
-			playButton.setText(R.string.home_play_button_play);
-		
-			label.setText(R.string.home_status_label_idle);
-		
-			if (progressDialog != null) {
-				hideProgressDialog();
-			}
-		}
-
-		private void setPlayingState() {
-			playButton.setEnabled(true);
-			playButton.setText(R.string.home_play_button_pause);
-		
-			label.setText(R.string.home_status_label_playing);
+		@Override
+		public void onCancel() {
+			finish();
 		}
 	}
-
 	private class LoaderUtils implements LoaderCallbacks<byte[]>,
-			OnProgressListener {
+			ProgressListener {
 
 		@Override
 		public Loader<byte[]> onCreateLoader(int id, Bundle args) {
-
 			switch (id) {
 			case FILE_LOADER_ID:
 				Log.d(ACTIVITY_SERVICE,
@@ -325,15 +305,97 @@ public class HomeActivity extends Activity {
 
 		@Override
 		public void onLoaderReset(Loader<byte[]> arg0) {
-			Log.d(ACTIVITY_SERVICE, "onLoaderReset.");
+			Log.d(ACTIVITY_SERVICE, "HomeActivity # onLoaderReset");
 		}
 
 		@Override
 		public void onProgress(int progress, int maxProgress) {
 			ProgressDialog pd = (ProgressDialog) progressDialog.getDialog();
 
-			pd.setMax(maxProgress);
-			pd.setProgress(progress);
+			if (pd != null) {
+				pd.setMax(maxProgress);
+				pd.setProgress(progress);
+			}
+		}
+	}
+
+	private class MediaPlayerUtils {
+	
+		private void initializePlayer(MediaPlayer mediaPlayer, byte[] file) {
+			File temp = null;
+			try {
+				temp = File.createTempFile("temp", "dat", getCacheDir());
+				// temp.deleteOnExit();
+			} catch (IOException e) {
+				Log.e(ACTIVITY_SERVICE,
+						"Exception while trying to create temp file.", e);
+			}
+	
+			try {
+				FileOutputStream out = new FileOutputStream(temp);
+				out.write(file);
+				out.close();
+			} catch (FileNotFoundException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			} catch (IOException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			}
+	
+			try {
+				FileInputStream in = new FileInputStream(temp);
+				mediaPlayer.setDataSource(in.getFD());
+				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				in.close();
+			} catch (IllegalArgumentException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			} catch (IllegalStateException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			} catch (IOException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			}
+	
+			try {
+				mediaPlayer.prepare();
+			} catch (IllegalStateException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			} catch (IOException e) {
+				Log.e(ACTIVITY_SERVICE, "", e);
+			}
+		}
+	
+		private void initializeAndStartPlayer(MediaPlayer mediaPlayer,
+				final byte[] file) {
+			AsyncTask<MediaPlayer, Integer, MediaPlayer> at = new AsyncTask<MediaPlayer, Integer, MediaPlayer>() {
+	
+				@Override
+				protected MediaPlayer doInBackground(MediaPlayer... players) {
+					MediaPlayer player = players[0];
+					initializePlayer(player, file);
+					return player;
+				}
+	
+				@Override
+				protected void onPostExecute(MediaPlayer result) {
+					super.onPostExecute(result);
+					startPlaying(result);
+					Log.d(AUDIO_SERVICE, "Music started.");
+				}
+			};
+			at.execute(mediaPlayer);
+		}
+	
+		private void startPlaying(MediaPlayer mediaPlayer) {
+			mediaPlayer.start();
+		}
+	
+		private void pausePlaying(MediaPlayer mediaPlayer) {
+			if (mediaPlayer.isPlaying()) {
+				mediaPlayer.pause();
+			}
+		}
+	
+		private boolean isPlaying() {
+			return mediaPlayer != null && mediaPlayer.isPlaying();
 		}
 	}
 }

@@ -14,7 +14,7 @@ import java.util.HashSet;
 
 public class FileLoader extends AsyncTaskLoader<byte[]> {
 
-	public static interface OnProgressListener {
+	public static interface ProgressListener {
 		void onProgress(int progress, int maxProgress);
 	}
 
@@ -22,10 +22,12 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 	private static final int BUFFER_SIZE = 2 * 1024;
 	private static final int MAX_PROGRESS = 100;
 
+
+	private HashSet<ProgressListener> progressListeners = new HashSet<ProgressListener>();
+
 	private final URL url;
 	private byte[] downloadedData;
-
-	private HashSet<OnProgressListener> progressListeners = new HashSet<OnProgressListener>();
+	private boolean isCanceled = false;
 
 
 	public FileLoader(Context context, URL url) {
@@ -35,6 +37,12 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 
 	@Override
 	public byte[] loadInBackground() {
+		Log.d(FILE_LOADER, "FileLoader # loadInBackground");
+
+		if (downloadedData != null) {
+			return downloadedData;
+		}
+
 		try {
 			return download(url);
 		} catch (IOException e) {
@@ -72,18 +80,29 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 			downloaded += readBytes;
 
 			publishProgress(MAX_PROGRESS * downloaded / size, MAX_PROGRESS);
-			// Log.d(ACTIVITY_SERVICE, "" + downloaded);
+			if (isCanceled()) {
+				break;
+			}
 		}
 	}
 
+	private int prevProgress = -1;
+	private int prevMaxProgress = -1;
 	private void publishProgress(int progress, int maxProgress) {
-		for (OnProgressListener listener : progressListeners) {
+		for (ProgressListener listener : progressListeners) {
 			listener.onProgress(progress, maxProgress);
+		}
+		if (prevProgress != progress || prevMaxProgress != maxProgress) {
+			prevProgress = progress;
+			prevMaxProgress = maxProgress;
+			Log.d(FILE_LOADER, String.format("%d / %d", progress, maxProgress));
 		}
 	}
 
 	@Override
 	public void deliverResult(byte[] data) {
+		Log.d(FILE_LOADER, "FileLoader # deliverResult");
+
 		if (isReset()) {
 			return;
 		}
@@ -96,6 +115,8 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 
 	@Override
 	protected void onStartLoading() {
+		Log.d(FILE_LOADER, "FileLoader # onStartLoading");
+
 		if (downloadedData != null) {
 			deliverResult(downloadedData);
 		}
@@ -107,11 +128,25 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 
 	@Override
 	protected void onStopLoading() {
-		cancelLoad();
+		Log.d(FILE_LOADER, "FileLoader # onStopLoading");
+
+		if (cancelLoad()) {
+			isCanceled = true;
+		}
+	}
+
+	private boolean isCanceled() {
+		if (isCanceled) {
+			isCanceled = false;
+			return true;
+		}
+		return isCanceled;
 	}
 
 	@Override
 	protected void onReset() {
+		Log.d(FILE_LOADER, "FileLoader # onReset");
+
 		onStopLoading();
 
 		if (downloadedData != null) {
@@ -119,22 +154,15 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 		}
 	}
 
-	// @Override
-	// public void onCanceled(byte[] data) {
-	// super.onCanceled(data);
-	//
-	// }
-	//
-	// private void releaseResources(byte[] data) {
-	//
-	// }
+	public void addProgressListener(ProgressListener listener) {
+		Log.d(FILE_LOADER, "FileLoader # addProgressListener");
 
-	public void addOnProgressListener(OnProgressListener listener) {
 		progressListeners.add(listener);
 	}
 
-	public void removeOnProgressListener(OnProgressListener listener) {
+	public void removeProgressListener(ProgressListener listener) {
+		Log.d(FILE_LOADER, "FileLoader # removeProgressListener");
+
 		progressListeners.remove(listener);
 	}
-
 }
