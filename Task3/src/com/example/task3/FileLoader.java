@@ -10,15 +10,23 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.HashSet;
 
 public class FileLoader extends AsyncTaskLoader<byte[]> {
 
+	public static interface OnProgressListener {
+		void onProgress(int progress, int maxProgress);
+	}
+
 	private static final String FILE_LOADER = "FileLoader";
 	private static final int BUFFER_SIZE = 2 * 1024;
+	private static final int MAX_PROGRESS = 100;
 
 	private final URL url;
-
 	private byte[] downloadedData;
+
+	private HashSet<OnProgressListener> progressListeners = new HashSet<OnProgressListener>();
+
 
 	public FileLoader(Context context, URL url) {
 		super(context);
@@ -38,13 +46,13 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 
 	public byte[] download(URL url) throws IOException {
 		ByteArrayOutputStream file = new ByteArrayOutputStream();
-	
+
 		InputStream in = null;
 		OutputStream out = file;
 		try {
 			URLConnection connection = url.openConnection();
 			in = connection.getInputStream();
-			download(in, out);
+			download(in, out, connection.getContentLength());
 		} finally {
 			out.close();
 			if (in != null) {
@@ -54,16 +62,25 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 		return file.toByteArray();
 	}
 
-	private void download(InputStream in, OutputStream out)
+	private void download(InputStream in, OutputStream out, int size)
 			throws IOException {
 		byte[] b = new byte[BUFFER_SIZE];
 		int readBytes;
+		int downloaded = 0;
 		while ((readBytes = in.read(b)) != -1) {
 			out.write(b, 0, readBytes);
-			Log.d(FILE_LOADER, ">>> " + readBytes);
+			downloaded += readBytes;
+
+			publishProgress(MAX_PROGRESS * downloaded / size, MAX_PROGRESS);
+			// Log.d(ACTIVITY_SERVICE, "" + downloaded);
 		}
 	}
 
+	private void publishProgress(int progress, int maxProgress) {
+		for (OnProgressListener listener : progressListeners) {
+			listener.onProgress(progress, maxProgress);
+		}
+	}
 
 	@Override
 	public void deliverResult(byte[] data) {
@@ -111,4 +128,13 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 	// private void releaseResources(byte[] data) {
 	//
 	// }
+
+	public void addOnProgressListener(OnProgressListener listener) {
+		progressListeners.add(listener);
+	}
+
+	public void removeOnProgressListener(OnProgressListener listener) {
+		progressListeners.remove(listener);
+	}
+
 }
