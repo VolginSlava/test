@@ -79,13 +79,6 @@ public class HomeActivity extends Activity {
 					statesUtils.setPlayingState();
 
 					mediaPlayerUtils.startPlaying();
-					// if (mediaPlayer == null) {
-					// mediaPlayer = new MediaPlayer();
-					// mediaPlayerUtils.initializeAndStartPlayer(mediaPlayer,
-					// downloadedMusicFile);
-					// } else {
-					// mediaPlayerUtils.startPlaying(mediaPlayer);
-					// }
 				}
 				Log.d(ACTIVITY_SERVICE,
 						"HomeActivity # OnPlayButtonEvent. IsPlaying: "
@@ -93,14 +86,14 @@ public class HomeActivity extends Activity {
 			}
 		});
 
-		if (!mediaPlayerUtils.serviceBound) {
-			mediaPlayerUtils.startMusicService();
-		}
-
 		if (getLastNonConfigurationInstance() != null) {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
 			downloadedMusicFile = (byte[]) map.get(DOWNLOADED_FILE_KEY);
+
+			mediaPlayerUtils.bind();
+		} else {
+			mediaPlayerUtils.startMusicService();
 		}
 
 		loaderManager = getLoaderManager();
@@ -114,10 +107,17 @@ public class HomeActivity extends Activity {
 	}
 
 	@Override
+	public void onBackPressed() {
+		super.onBackPressed();
+		mediaPlayerUtils.pausePlaying();
+
+	}
+
+	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		if (mediaPlayerUtils.serviceBound) {
-			mediaPlayerUtils.stopMusicService();
+			mediaPlayerUtils.unbind();
 		}
 	}
 
@@ -158,39 +158,6 @@ public class HomeActivity extends Activity {
 
 		dialogUtils.hideProgressDialog();
 	}
-
-	// @Override
-	// protected void onStart() {
-	// super.onStart();
-	//
-	// Log.d(ACTIVITY_SERVICE, "HomeActivity # onStart");
-	// Log.d(ACTIVITY_SERVICE,
-	// "Downloaded file: "
-	// + (downloadedMusicFile != null ? String.format(
-	// "%,d bytes.", downloadedMusicFile.length)
-	// : "null"));
-	// Log.d(ACTIVITY_SERVICE,
-	// "Loader: " + loaderManager.getLoader(FILE_LOADER_ID));
-	// }
-	//
-	// @Override
-	// protected void onStop() {
-	// super.onStop();
-	//
-	// Log.d(ACTIVITY_SERVICE, "HomeActivity # onStop");
-	// Log.d(ACTIVITY_SERVICE,
-	// "Downloaded file: "
-	// + (downloadedMusicFile != null ? String.format(
-	// "%,d bytes.", downloadedMusicFile.length)
-	// : "null"));
-	// }
-	//
-	// @Override
-	// protected void onDestroy() {
-	// super.onDestroy();
-	//
-	// Log.d(ACTIVITY_SERVICE, "HomeActivity # onDestroy");
-	// }
 
 	@Override
 	@Deprecated
@@ -254,6 +221,16 @@ public class HomeActivity extends Activity {
 			playButton.setText(R.string.home_play_button_pause);
 		
 			label.setText(R.string.home_status_label_playing);
+		}
+
+		private void onServiceConnectedUpdateState() {
+			if (loaderUtils.isFileDownloaded()) {
+				if (mediaPlayerUtils.isPlaying()) {
+					statesUtils.setPlayingState();
+				} else {
+					statesUtils.setIdleState();
+				}
+			}
 		}
 	}
 
@@ -337,6 +314,10 @@ public class HomeActivity extends Activity {
 				pd.setProgress(progress);
 			}
 		}
+
+		private boolean isFileDownloaded() {
+			return downloadedMusicFile != null;
+		}
 	}
 	
 	
@@ -354,11 +335,12 @@ public class HomeActivity extends Activity {
 				musicService = binder.getService();
 				serviceBound = true;
 
-				if (downloadedMusicFile != null) {
+				statesUtils.onServiceConnectedUpdateState();
+
+				if (loaderUtils.isFileDownloaded()) {
 					Log.d(ACTIVITY_SERVICE,
 							"ServiceConnection # onServiceConnected, downloadedFile != null. Service bound: "
 									+ serviceBound);
-					mediaPlayerUtils.musicService.setMusic(downloadedMusicFile);
 				}
 
 				Log.d("ServiceConnection",
@@ -383,8 +365,12 @@ public class HomeActivity extends Activity {
 		}
 
 		private void bind() {
+			if (playIntent == null) {
+				playIntent = new Intent(HomeActivity.this, MusicService.class);
+			}
 			boolean bind = bindService(playIntent, musicConnection,
 					Context.BIND_AUTO_CREATE);
+			
 			Log.d(ACTIVITY_SERVICE, "Bind: " + bind);
 		}
 

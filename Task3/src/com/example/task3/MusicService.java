@@ -52,7 +52,10 @@ public class MusicService extends Service implements OnPreparedListener,
 	public void setMusic(byte[] bytes) {
 		fileBytes = bytes;
 		prepared = false;
-		player.reset();
+		// player.reset();
+		player.release();
+		player = new MediaPlayer();
+		addPlayerListeners();
 
 		File temp = null;
 		try {
@@ -112,7 +115,7 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	public boolean isPlaying() {
-		return player.isPlaying();
+		return prepared && player.isPlaying();
 	}
 
 	@Override
@@ -122,7 +125,9 @@ public class MusicService extends Service implements OnPreparedListener,
 
 	@Override
 	public boolean onUnbind(Intent intent) {
-		player.stop();
+		if (isPlaying()) {
+			player.stop();
+		}
 		player.release();
 		return false;
 	}
