@@ -28,6 +28,12 @@
 			android:name=".HomeActivity"
 			android:label="@string/title_activity_home" >
 		</activity>
+
+		<service
+			android:name="com.example.task3.MusicService"
+			android:exported="false" >
+		</service>
+
 	</application>
 
 </manifest>
