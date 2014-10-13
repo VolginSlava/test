@@ -144,7 +144,7 @@ public class HomeActivity extends Activity {
 		if (fileLoader != null) {
 			fileLoader.removeProgressListener(loaderUtils);
 		}
-		progressDialog.addCancelListener(dialogUtils);
+		progressDialog.removeCancelListener(dialogUtils);
 
 		dialogUtils.hideProgressDialog();
 	}
