@@ -30,6 +30,8 @@ public class MyDialogFragment extends DialogFragment {
 		pd.setTitle("Title");
 		pd.setMessage("Downloading...");
 
+		// pd.setCancelable(false);
+		pd.setCanceledOnTouchOutside(false);
 		return pd;
 	}
 
