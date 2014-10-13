@@ -4,12 +4,15 @@ import android.app.Activity;
 import android.app.LoaderManager;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
 import android.content.Loader;
-import android.media.AudioManager;
+import android.content.ServiceConnection;
 import android.media.MediaPlayer;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,16 +21,12 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 
 import com.example.task3.FileLoader.ProgressListener;
+import com.example.task3.MusicService.MusicBinder;
 import com.example.task3.MyDialogFragment.CancelListener;
 
 public class HomeActivity extends Activity {
@@ -77,24 +76,25 @@ public class HomeActivity extends Activity {
 
 			@Override
 			public void onClick(View v) {
-				if (mediaPlayerUtils.isPlaying()) {
+				if (isPauseButtonPressed()) {
 					statesUtils.setIdleState();
 
-					mediaPlayerUtils.pausePlaying(mediaPlayer);
-				} else {
+					mediaPlayerUtils.pausePlaying();
+				} else if (isPlayButtonPressed()) {
 					statesUtils.setPlayingState();
 
-					if (mediaPlayer == null) {
-						mediaPlayer = new MediaPlayer();
-						mediaPlayerUtils.initializeAndStartPlayer(mediaPlayer,
-								downloadedMusicFile);
-					} else {
-						mediaPlayerUtils.startPlaying(mediaPlayer);
-					}
+					mediaPlayerUtils.startPlaying();
+					// if (mediaPlayer == null) {
+					// mediaPlayer = new MediaPlayer();
+					// mediaPlayerUtils.initializeAndStartPlayer(mediaPlayer,
+					// downloadedMusicFile);
+					// } else {
+					// mediaPlayerUtils.startPlaying(mediaPlayer);
+					// }
 				}
 				Log.d(ACTIVITY_SERVICE,
 						"HomeActivity # OnPlayButtonEvent. IsPlaying: "
-						+ mediaPlayerUtils.isPlaying());
+								+ mediaPlayerUtils.isPlaying());
 			}
 		});
 
@@ -112,6 +112,18 @@ public class HomeActivity extends Activity {
 			bundle.putSerializable(FILE_URL_KEY, FILE_URL);
 			loaderManager.initLoader(FILE_LOADER_ID, bundle, loaderUtils);
 		}
+
+		if (!mediaPlayerUtils.serviceBound) {
+			mediaPlayerUtils.startMusicService();
+		}
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		if (mediaPlayerUtils.serviceBound) {
+			mediaPlayerUtils.stopMusicService();
+		}
 	}
 
 	@Override
@@ -122,7 +134,7 @@ public class HomeActivity extends Activity {
 
 		if (downloadedMusicFile == null) {
 			statesUtils.setDownloadingState();
-		} else if (mediaPlayerUtils.isPlaying()) {
+		} else if (isPauseButtonPressed()) {
 			statesUtils.setPlayingState();
 		} else {
 			statesUtils.setIdleState();
@@ -216,6 +228,14 @@ public class HomeActivity extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 
+	private boolean isPauseButtonPressed() {
+		return mediaPlayerUtils.isPlaying();
+	}
+
+	private boolean isPlayButtonPressed() {
+		return !isPauseButtonPressed();
+	}
+
 	private class StatesUtils {
 	
 		private void setDownloadingState() {
@@ -302,6 +322,8 @@ public class HomeActivity extends Activity {
 				@Override
 				public void run() {
 					statesUtils.setIdleState();
+
+					mediaPlayerUtils.musicService.setMusic(downloadedMusicFile);
 				}
 			});
 		}
@@ -321,84 +343,69 @@ public class HomeActivity extends Activity {
 			}
 		}
 	}
-
+	
+	
 	private class MediaPlayerUtils {
-	
-		private void initializePlayer(MediaPlayer mediaPlayer, byte[] file) {
-			File temp = null;
-			try {
-				temp = File.createTempFile("temp", "dat", getCacheDir());
-				// temp.deleteOnExit();
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE,
-						"Exception while trying to create temp file.", e);
+		private MusicService musicService;
+		private Intent playIntent;
+		private boolean serviceBound = false;
+
+		private ServiceConnection musicConnection = new ServiceConnection() {
+
+			@Override
+			public void onServiceConnected(ComponentName name, IBinder service) {
+				MusicBinder binder = (MusicBinder) service;
+
+				musicService = binder.getService();
+				serviceBound = true;
+
+				Log.d("ServiceConnection",
+						"MediaPlayerUtils # onServiceConnected");
 			}
-	
-			try {
-				FileOutputStream out = new FileOutputStream(temp);
-				out.write(file);
-				out.close();
-			} catch (FileNotFoundException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
+
+			@Override
+			public void onServiceDisconnected(ComponentName name) {
+				serviceBound = false;
+
+				Log.d("ServiceConnection",
+						"MediaPlayerUtils # onServiceDisconnected");
 			}
-	
-			try {
-				FileInputStream in = new FileInputStream(temp);
-				mediaPlayer.setDataSource(in.getFD());
-				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-				in.close();
-			} catch (IllegalArgumentException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IllegalStateException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			}
-	
-			try {
-				mediaPlayer.prepare();
-			} catch (IllegalStateException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
-			} catch (IOException e) {
-				Log.e(ACTIVITY_SERVICE, "", e);
+		};
+
+		private void startMusicService() {
+			if (playIntent == null) {
+				playIntent = new Intent(HomeActivity.this, MusicService.class);
+				bind();
+				startService(playIntent);
 			}
 		}
-	
-		private void initializeAndStartPlayer(MediaPlayer mediaPlayer,
-				final byte[] file) {
-			AsyncTask<MediaPlayer, Integer, MediaPlayer> at = new AsyncTask<MediaPlayer, Integer, MediaPlayer>() {
-	
-				@Override
-				protected MediaPlayer doInBackground(MediaPlayer... players) {
-					MediaPlayer player = players[0];
-					initializePlayer(player, file);
-					return player;
-				}
-	
-				@Override
-				protected void onPostExecute(MediaPlayer result) {
-					super.onPostExecute(result);
-					startPlaying(result);
-					Log.d(AUDIO_SERVICE, "Music started.");
-				}
-			};
-			at.execute(mediaPlayer);
+
+		private void bind() {
+			boolean bind = bindService(playIntent, musicConnection,
+					Context.BIND_AUTO_CREATE);
+			Log.d(ACTIVITY_SERVICE, "Bind: " + bind);
 		}
-	
-		private void startPlaying(MediaPlayer mediaPlayer) {
-			mediaPlayer.start();
+
+		private void unbind() {
+			unbindService(musicConnection);
 		}
-	
-		private void pausePlaying(MediaPlayer mediaPlayer) {
-			if (mediaPlayer.isPlaying()) {
-				mediaPlayer.pause();
-			}
+
+		private void stopMusicService() {
+			unbind();
+			stopService(playIntent);
+			musicService = null;
 		}
-	
+
+		private void startPlaying() {
+			musicService.playMusic();
+		}
+
+		private void pausePlaying() {
+			musicService.pauseMusic();
+		}
+
 		private boolean isPlaying() {
-			return mediaPlayer != null && mediaPlayer.isPlaying();
+			return musicService != null && musicService.isPlaying();
 		}
 	}
 }

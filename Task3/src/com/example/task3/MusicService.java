@@ -134,9 +134,8 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	@Override
-	public void onCompletion(MediaPlayer arg0) {
-		// TODO Auto-generated method stub
-
+	public void onCompletion(MediaPlayer player) {
+		player.start();
 	}
 
 	@Override
