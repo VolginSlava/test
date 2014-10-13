@@ -148,7 +148,7 @@ public class MusicService extends Service implements OnPreparedListener,
 		try {
 			if (c != null) {
 				c.close();
-	}
+			}
 		} catch (IOException e) {
 			Log.i(MUSIC_SERVICE,
 					"Exception occures while trying to close resource", e);

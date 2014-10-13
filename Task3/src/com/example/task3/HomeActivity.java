@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
 import android.content.ServiceConnection;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -31,10 +30,7 @@ import com.example.task3.MyDialogFragment.CancelListener;
 
 public class HomeActivity extends Activity {
 
-	private static final String MEDIA_PLAYER_KEY = "mediaPlayer";
 	private static final String FILE_URL_KEY = "url";
-	// private static final String FILE_URL_STRING =
-	// "http://www.audiocheck.net/download.php?filename=Audio/audiocheck.net_white_88k_-3dBFS.wav";
 	private static final String FILE_URL_STRING = "http://www.directlinkupload.com/uploads/46.20.72.162/Jingle-Punks-Arriba-Mami.mp3";
 
 	private static final URL FILE_URL;
@@ -56,7 +52,6 @@ public class HomeActivity extends Activity {
 	private TextView label;
 	private byte[] downloadedMusicFile;
 	private MyDialogFragment progressDialog;
-	private MediaPlayer mediaPlayer;
 
 	private StatesUtils statesUtils = new StatesUtils();
 	private DialogUtils dialogUtils = new DialogUtils();
@@ -98,11 +93,14 @@ public class HomeActivity extends Activity {
 			}
 		});
 
+		if (!mediaPlayerUtils.serviceBound) {
+			mediaPlayerUtils.startMusicService();
+		}
+
 		if (getLastNonConfigurationInstance() != null) {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
 			downloadedMusicFile = (byte[]) map.get(DOWNLOADED_FILE_KEY);
-			mediaPlayer = (MediaPlayer) map.get(MEDIA_PLAYER_KEY);
 		}
 
 		loaderManager = getLoaderManager();
@@ -113,9 +111,6 @@ public class HomeActivity extends Activity {
 			loaderManager.initLoader(FILE_LOADER_ID, bundle, loaderUtils);
 		}
 
-		if (!mediaPlayerUtils.serviceBound) {
-			mediaPlayerUtils.startMusicService();
-		}
 	}
 
 	@Override
@@ -202,7 +197,7 @@ public class HomeActivity extends Activity {
 	public Object onRetainNonConfigurationInstance() {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(DOWNLOADED_FILE_KEY, downloadedMusicFile);
-		map.put(MEDIA_PLAYER_KEY, mediaPlayer);
+		// map.put(MEDIA_PLAYER_KEY, mediaPlayer);
 	
 		Log.d(ACTIVITY_SERVICE, map
 				+ " onRetainNonConfigurationInstance called.");
@@ -358,6 +353,13 @@ public class HomeActivity extends Activity {
 
 				musicService = binder.getService();
 				serviceBound = true;
+
+				if (downloadedMusicFile != null) {
+					Log.d(ACTIVITY_SERVICE,
+							"ServiceConnection # onServiceConnected, downloadedFile != null. Service bound: "
+									+ serviceBound);
+					mediaPlayerUtils.musicService.setMusic(downloadedMusicFile);
+				}
 
 				Log.d("ServiceConnection",
 						"MediaPlayerUtils # onServiceConnected");
