@@ -34,7 +34,10 @@ public class HomeActivity extends Activity {
 
 	private static final String MEDIA_PLAYER_KEY = "mediaPlayer";
 	private static final String FILE_URL_KEY = "url";
-	private static final String FILE_URL_STRING = "http://www.audiocheck.net/download.php?filename=Audio/audiocheck.net_white_88k_-3dBFS.wav";
+	// private static final String FILE_URL_STRING =
+	// "http://www.audiocheck.net/download.php?filename=Audio/audiocheck.net_white_88k_-3dBFS.wav";
+	private static final String FILE_URL_STRING = "http://www.directlinkupload.com/uploads/46.20.72.162/Jingle-Punks-Arriba-Mami.mp3";
+
 	private static final URL FILE_URL;
 	private static final int FILE_LOADER_ID = 1;
 	private static final String DOWNLOADED_FILE_KEY = "downloadedMusicFile";
