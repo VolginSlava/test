@@ -231,7 +231,6 @@ public class HomeActivity extends Activity {
 		private NotificationManager getNotificationManager() {
 			return (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		}
-
 	}
 
 	private class StatesUtils {
@@ -457,6 +456,12 @@ public class HomeActivity extends Activity {
 			}
 		}
 
+		private void stopMusicService() {
+			unbind();
+			stopService(playIntent);
+			musicService = null;
+		}
+
 		private void bind() {
 			if (playIntent == null) {
 				playIntent = new Intent(HomeActivity.this, MusicService.class);
@@ -469,12 +474,6 @@ public class HomeActivity extends Activity {
 
 		private void unbind() {
 			unbindService(musicConnection);
-		}
-
-		private void stopMusicService() {
-			unbind();
-			stopService(playIntent);
-			musicService = null;
 		}
 
 		private void startPlaying() {
