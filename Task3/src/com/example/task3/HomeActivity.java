@@ -3,6 +3,9 @@ package com.example.task3;
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.app.LoaderManager.LoaderCallbacks;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -26,37 +29,34 @@ import java.util.HashMap;
 
 import com.example.task3.FileLoader.ProgressListener;
 import com.example.task3.MusicService.MusicBinder;
-import com.example.task3.MyDialogFragment.CancelListener;
+import com.example.task3.ProgressDialogFragment.CancelListener;
 
 public class HomeActivity extends Activity {
 
+	private static final int NOTIFICATION_ID = 2;
 	private static final String FILE_URL_KEY = "url";
 	private static final String FILE_URL_STRING = "http://www.directlinkupload.com/uploads/46.20.72.162/Jingle-Punks-Arriba-Mami.mp3";
 
-	private static final URL FILE_URL;
-	private static final int FILE_LOADER_ID = 1;
 	private static final String DOWNLOADED_FILE_KEY = "downloadedMusicFile";
+	private static final URL FILE_URL;
 	static {
-		URL url;
 		try {
-			url = new URL(FILE_URL_STRING);
+			FILE_URL = new URL(FILE_URL_STRING);
 		} catch (MalformedURLException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-			url = null;
+			throw new RuntimeException(e);
 		}
-		FILE_URL = url;
 	}
 
-	private LoaderManager loaderManager;
+
 	private Button playButton;
 	private TextView label;
-	private byte[] downloadedMusicFile;
-	private MyDialogFragment progressDialog;
 
 	private StatesUtils statesUtils = new StatesUtils();
 	private DialogUtils dialogUtils = new DialogUtils();
 	private LoaderUtils loaderUtils = new LoaderUtils();
 	private MediaPlayerUtils mediaPlayerUtils = new MediaPlayerUtils();
+	private NotificationsUtils notificationsUtils = new NotificationsUtils();
+
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -64,7 +64,8 @@ public class HomeActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 
-		progressDialog = new MyDialogFragment();
+		dialogUtils.onCreate();
+
 		label = (TextView) findViewById(R.id.v_status_label);
 		playButton = (Button) findViewById(R.id.v_play_button);
 		playButton.setOnClickListener(new OnClickListener() {
@@ -73,44 +74,77 @@ public class HomeActivity extends Activity {
 			public void onClick(View v) {
 				if (isPauseButtonPressed()) {
 					statesUtils.setIdleState();
-
 					mediaPlayerUtils.pausePlaying();
 				} else if (isPlayButtonPressed()) {
 					statesUtils.setPlayingState();
-
 					mediaPlayerUtils.startPlaying();
 				}
-				Log.d(ACTIVITY_SERVICE,
-						"HomeActivity # OnPlayButtonEvent. IsPlaying: "
-								+ mediaPlayerUtils.isPlaying());
+				Log.d(ACTIVITY_SERVICE, "HomeActivity # OnPlayButtonEvent. IsPlaying: " + mediaPlayerUtils.isPlaying());
 			}
 		});
 
 		if (getLastNonConfigurationInstance() != null) {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
-			downloadedMusicFile = (byte[]) map.get(DOWNLOADED_FILE_KEY);
+			loaderUtils.downloadedMusicFile = (byte[]) map
+					.get(DOWNLOADED_FILE_KEY);
 
 			mediaPlayerUtils.bind();
 		} else {
 			mediaPlayerUtils.startMusicService();
 		}
 
-		loaderManager = getLoaderManager();
-
-		if (downloadedMusicFile == null) {
+		loaderUtils.onCreate();
+		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
 			bundle.putSerializable(FILE_URL_KEY, FILE_URL);
-			loaderManager.initLoader(FILE_LOADER_ID, bundle, loaderUtils);
+			loaderUtils.initLoaderManager(bundle);
 		}
-
 	}
 
 	@Override
-	public void onBackPressed() {
-		super.onBackPressed();
-		mediaPlayerUtils.pausePlaying();
+	protected void onRestart() {
+		super.onRestart();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onRestart");
 
+		// TODO remove notification menu
+		notificationsUtils.hide(NOTIFICATION_ID);
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStart");
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onResume");
+
+		statesUtils.onResumeUpdateState();
+		loaderUtils.addProgressListener();
+		dialogUtils.addCancelListener();
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause");
+
+		loaderUtils.removeProgressListener();
+		dialogUtils.removeCancelListener();
+		dialogUtils.hideProgressDialog();
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStop");
+
+		// TODO add notification menu
+		Notification notification = notificationsUtils.create(NOTIFICATION_ID);
+		notificationsUtils.show(NOTIFICATION_ID, notification);
 	}
 
 	@Override
@@ -119,52 +153,35 @@ public class HomeActivity extends Activity {
 		if (mediaPlayerUtils.serviceBound) {
 			mediaPlayerUtils.unbind();
 		}
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onDestroy");
+
+		// TODO remove notification menu
+		notificationsUtils.hide(NOTIFICATION_ID);
 	}
 
 	@Override
-	protected void onResume() {
-		super.onResume();
-
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onResume");
-
-		if (downloadedMusicFile == null) {
-			statesUtils.setDownloadingState();
-		} else if (isPauseButtonPressed()) {
-			statesUtils.setPlayingState();
-		} else {
-			statesUtils.setIdleState();
+	public void onBackPressed() {
+		super.onBackPressed();
+		if (mediaPlayerUtils.isPlaying()) {
+			mediaPlayerUtils.pausePlaying();
 		}
-
-		FileLoader fileLoader = (FileLoader) loaderManager
-				.<byte[]> getLoader(FILE_LOADER_ID);
-		if (fileLoader != null) {
-			fileLoader.addProgressListener(loaderUtils);
-		}
-		progressDialog.addCancelListener(dialogUtils);
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onBackPressed");
 	}
 
-	@Override
-	protected void onPause() {
-		super.onPause();
+	private boolean isPauseButtonPressed() {
+		return mediaPlayerUtils.isPlaying();
+	}
 
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause()");
-
-		FileLoader fileLoader = (FileLoader) loaderManager
-				.<byte[]> getLoader(FILE_LOADER_ID);
-		if (fileLoader != null) {
-			fileLoader.removeProgressListener(loaderUtils);
-		}
-		progressDialog.removeCancelListener(dialogUtils);
-
-		dialogUtils.hideProgressDialog();
+	private boolean isPlayButtonPressed() {
+		return !isPauseButtonPressed();
 	}
 
 	@Override
 	@Deprecated
 	public Object onRetainNonConfigurationInstance() {
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put(DOWNLOADED_FILE_KEY, downloadedMusicFile);
-	
+		map.put(DOWNLOADED_FILE_KEY, loaderUtils.downloadedMusicFile);
+
 		Log.d(ACTIVITY_SERVICE, map
 				+ " onRetainNonConfigurationInstance called.");
 		return map;
@@ -189,37 +206,74 @@ public class HomeActivity extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 
-	private boolean isPauseButtonPressed() {
-		return mediaPlayerUtils.isPlaying();
-	}
+	private class NotificationsUtils {
 
-	private boolean isPlayButtonPressed() {
-		return !isPauseButtonPressed();
+		private static final int REQUEST_CODE = 3;
+
+		@SuppressWarnings("deprecation")
+		private Notification create(int notificationId) {
+			Intent intent = new Intent(HomeActivity.this, HomeActivity.class);
+			PendingIntent pendingIntent = PendingIntent.getActivity(
+					HomeActivity.this, REQUEST_CODE, intent, 0);
+
+			Notification.Builder builder = new Notification.Builder(
+					HomeActivity.this);
+
+			builder.setContentTitle("Title")
+					.setContentText("text")
+					.setContentInfo("info")
+					.setSmallIcon(R.drawable.ic_launcher)
+					.setContentIntent(pendingIntent);
+
+			return builder.getNotification();
+		}
+
+		private void show(int notificationId, Notification notification) {
+			getNotificationManager().notify(notificationId, notification);
+		}
+
+		private void hide(int notificationId) {
+			getNotificationManager().cancel(notificationId);
+		}
+
+		private NotificationManager getNotificationManager() {
+			return (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		}
 	}
 
 	private class StatesUtils {
-	
+
 		private void setDownloadingState() {
 			playButton.setEnabled(false);
 			label.setText(R.string.home_status_label_downloading);
-		
+
 			dialogUtils.showProgressDialog();
 		}
-	
+
 		private void setIdleState() {
 			playButton.setEnabled(true);
 			playButton.setText(R.string.home_play_button_play);
-		
+
 			label.setText(R.string.home_status_label_idle);
-		
+
 			dialogUtils.hideProgressDialog();
 		}
-	
+
 		private void setPlayingState() {
 			playButton.setEnabled(true);
 			playButton.setText(R.string.home_play_button_pause);
-		
+
 			label.setText(R.string.home_status_label_playing);
+		}
+
+		private void onResumeUpdateState() {
+			if (!loaderUtils.isFileDownloaded()) {
+				setDownloadingState();
+			} else if (mediaPlayerUtils.isPlaying()) {
+				setPlayingState();
+			} else {
+				setIdleState();
+			}
 		}
 
 		private void onServiceConnectedUpdateState() {
@@ -235,9 +289,14 @@ public class HomeActivity extends Activity {
 
 	private class DialogUtils implements CancelListener {
 
+		private ProgressDialogFragment progressDialogFragment;
+
+		private void onCreate() {
+			progressDialogFragment = new ProgressDialogFragment();
+		}
+
 		private void showProgressDialog() {
-			progressDialog.show(getFragmentManager(),
-					"progressDialog");
+			progressDialogFragment.show(getFragmentManager(), "progressDialog");
 			// progressDialog = new MyDialogFragment();
 			// FragmentManager fragmentManager = getFragmentManager();
 			// FragmentTransaction fragmentTransaction = fragmentManager
@@ -247,7 +306,7 @@ public class HomeActivity extends Activity {
 		}
 
 		private void hideProgressDialog() {
-			progressDialog.dismiss();
+			progressDialogFragment.dismiss();
 			// FragmentManager fragmentManager = getFragmentManager();
 			// FragmentTransaction fragmentTransaction = fragmentManager
 			// .beginTransaction();
@@ -255,13 +314,59 @@ public class HomeActivity extends Activity {
 			// fragmentTransaction.commit();
 		}
 
+		private void addCancelListener() {
+			progressDialogFragment.addCancelListener(DialogUtils.this);
+		}
+
+		private void removeCancelListener() {
+			progressDialogFragment.removeCancelListener(DialogUtils.this);
+		}
+
 		@Override
 		public void onCancel() {
 			finish();
 		}
 	}
+
 	private class LoaderUtils implements LoaderCallbacks<byte[]>,
 			ProgressListener {
+
+		private static final int FILE_LOADER_ID = 1;
+
+		private LoaderManager loaderManager;
+
+		private byte[] downloadedMusicFile;
+
+		private void onCreate() {
+			loaderUtils.loaderManager = getLoaderManager();
+		}
+
+		private void initLoaderManager(Bundle bundle) {
+			loaderManager.initLoader(FILE_LOADER_ID, bundle, this);
+		}
+
+		private void addProgressListener() {
+			FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
+			if (fileLoader != null) {
+				fileLoader.addProgressListener(this);
+			}
+		}
+
+		private void removeProgressListener() {
+			FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
+			if (fileLoader != null) {
+				fileLoader.removeProgressListener(this);
+			}
+		}
+
+		private FileLoader getFileLoader(int fileLoaderId) {
+			return (FileLoader) loaderManager
+					.<byte[]> getLoader(fileLoaderId);
+		}
+
+		private boolean isFileDownloaded() {
+			return downloadedMusicFile != null;
+		}
 
 		@Override
 		public Loader<byte[]> onCreateLoader(int id, Bundle args) {
@@ -306,20 +411,16 @@ public class HomeActivity extends Activity {
 
 		@Override
 		public void onProgress(int progress, int maxProgress) {
-			ProgressDialog pd = (ProgressDialog) progressDialog.getDialog();
+			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment
+					.getDialog();
 
 			if (pd != null) {
 				pd.setMax(maxProgress);
 				pd.setProgress(progress);
 			}
 		}
-
-		private boolean isFileDownloaded() {
-			return downloadedMusicFile != null;
-		}
 	}
-	
-	
+
 	private class MediaPlayerUtils {
 		private MusicService musicService;
 		private Intent playIntent;
@@ -363,24 +464,24 @@ public class HomeActivity extends Activity {
 			}
 		}
 
+		private void stopMusicService() {
+			unbind();
+			stopService(playIntent);
+			musicService = null;
+		}
+
 		private void bind() {
 			if (playIntent == null) {
 				playIntent = new Intent(HomeActivity.this, MusicService.class);
 			}
 			boolean bind = bindService(playIntent, musicConnection,
 					Context.BIND_AUTO_CREATE);
-			
+
 			Log.d(ACTIVITY_SERVICE, "Bind: " + bind);
 		}
 
 		private void unbind() {
 			unbindService(musicConnection);
-		}
-
-		private void stopMusicService() {
-			unbind();
-			stopService(playIntent);
-			musicService = null;
 		}
 
 		private void startPlaying() {

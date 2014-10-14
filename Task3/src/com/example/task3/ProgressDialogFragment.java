@@ -9,7 +9,7 @@ import android.util.Log;
 
 import java.util.HashSet;
 
-public class MyDialogFragment extends DialogFragment {
+public class ProgressDialogFragment extends DialogFragment {
 
 	public static interface CancelListener {
 		void onCancel();
