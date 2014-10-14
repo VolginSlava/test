@@ -50,9 +50,6 @@ public class HomeActivity extends Activity {
 	private Button playButton;
 	private TextView label;
 
-	private ProgressDialogFragment progressDialogFragment;
-	private byte[] downloadedMusicFile;
-
 	private StatesUtils statesUtils = new StatesUtils();
 	private DialogUtils dialogUtils = new DialogUtils();
 	private LoaderUtils loaderUtils = new LoaderUtils();
@@ -66,7 +63,9 @@ public class HomeActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 
-		progressDialogFragment = new ProgressDialogFragment();
+		// progressDialogFragment = new ProgressDialogFragment();
+		dialogUtils.onCreate();// TODO may need fixing
+
 		label = (TextView) findViewById(R.id.v_status_label);
 		playButton = (Button) findViewById(R.id.v_play_button);
 		playButton.setOnClickListener(new OnClickListener() {
@@ -91,7 +90,8 @@ public class HomeActivity extends Activity {
 		if (getLastNonConfigurationInstance() != null) {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
-			downloadedMusicFile = (byte[]) map.get(DOWNLOADED_FILE_KEY);
+			loaderUtils.downloadedMusicFile = (byte[]) map
+					.get(DOWNLOADED_FILE_KEY);
 
 			mediaPlayerUtils.bind();
 		} else {
@@ -194,7 +194,7 @@ public class HomeActivity extends Activity {
 	@Deprecated
 	public Object onRetainNonConfigurationInstance() {
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put(DOWNLOADED_FILE_KEY, downloadedMusicFile);
+		map.put(DOWNLOADED_FILE_KEY, loaderUtils.downloadedMusicFile);
 
 		Log.d(ACTIVITY_SERVICE, map
 				+ " onRetainNonConfigurationInstance called.");
@@ -297,6 +297,12 @@ public class HomeActivity extends Activity {
 
 	private class DialogUtils implements CancelListener {
 
+		private ProgressDialogFragment progressDialogFragment;
+
+		private void onCreate() {
+			progressDialogFragment = new ProgressDialogFragment();
+		}
+
 		private void showProgressDialog() {
 			progressDialogFragment.show(getFragmentManager(), "progressDialog");
 			// progressDialog = new MyDialogFragment();
@@ -336,6 +342,8 @@ public class HomeActivity extends Activity {
 		private static final int FILE_LOADER_ID = 1;
 
 		private LoaderManager loaderManager;
+
+		private byte[] downloadedMusicFile;
 
 		private void onCreate() {
 			loaderUtils.loaderManager = getLoaderManager();
@@ -411,7 +419,7 @@ public class HomeActivity extends Activity {
 
 		@Override
 		public void onProgress(int progress, int maxProgress) {
-			ProgressDialog pd = (ProgressDialog) progressDialogFragment
+			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment
 					.getDialog();
 
 			if (pd != null) {
