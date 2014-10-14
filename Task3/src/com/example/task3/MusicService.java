@@ -52,7 +52,6 @@ public class MusicService extends Service implements OnPreparedListener,
 	public void setMusic(byte[] bytes) {
 		fileBytes = bytes;
 		prepared = false;
-		// player.reset();
 		player.release();
 		player = new MediaPlayer();
 		addPlayerListeners();
@@ -115,7 +114,13 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	public boolean isPlaying() {
-		return prepared && player.isPlaying();
+		boolean result = false;
+		try{
+			result = prepared && player.isPlaying();
+		} catch (IllegalStateException e) {
+			Log.e(MUSIC_SERVICE, "MusicService # isPlaying", e);
+		}
+		return result;
 	}
 
 	@Override

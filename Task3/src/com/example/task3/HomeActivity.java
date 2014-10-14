@@ -5,6 +5,7 @@ import android.app.LoaderManager;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -207,15 +208,22 @@ public class HomeActivity extends Activity {
 
 	private class NotificationsUtils {
 
+		private static final int REQUEST_CODE = 3;
+
 		@SuppressWarnings("deprecation")
 		private Notification create(int notificationId) {
+			Intent intent = new Intent(HomeActivity.this, HomeActivity.class);
+			PendingIntent pendingIntent = PendingIntent.getActivity(
+					HomeActivity.this, REQUEST_CODE, intent, 0);
+
 			Notification.Builder builder = new Notification.Builder(
 					HomeActivity.this);
-			
+
 			builder.setContentTitle("Title")
 					.setContentText("text")
 					.setContentInfo("info")
-					.setSmallIcon(R.drawable.ic_launcher);
+					.setSmallIcon(R.drawable.ic_launcher)
+					.setContentIntent(pendingIntent);
 
 			return builder.getNotification();
 		}

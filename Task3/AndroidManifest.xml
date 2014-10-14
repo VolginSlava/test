@@ -26,7 +26,9 @@
 		</activity>
 		<activity
 			android:name=".HomeActivity"
-			android:label="@string/title_activity_home" >
+			android:label="@string/title_activity_home"
+			android:launchMode="singleTop" >
+
 		</activity>
 
 		<service
