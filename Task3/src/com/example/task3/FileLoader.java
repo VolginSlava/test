@@ -88,9 +88,12 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 
 	private int prevProgress = -1;
 	private int prevMaxProgress = -1;
+
 	private void publishProgress(int progress, int maxProgress) {
-		for (ProgressListener listener : progressListeners) {
-			listener.onProgress(progress, maxProgress);
+		synchronized (progressListeners) {
+			for (ProgressListener listener : progressListeners) {
+				listener.onProgress(progress, maxProgress);
+			}
 		}
 		if (prevProgress != progress || prevMaxProgress != maxProgress) {
 			prevProgress = progress;
