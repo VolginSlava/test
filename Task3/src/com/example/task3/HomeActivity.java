@@ -107,18 +107,9 @@ public class HomeActivity extends Activity {
 	}
 
 	@Override
-	public void onBackPressed() {
-		super.onBackPressed();
-		mediaPlayerUtils.pausePlaying();
-
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		if (mediaPlayerUtils.serviceBound) {
-			mediaPlayerUtils.unbind();
-		}
+	protected void onRestart() {
+		super.onRestart();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onRestart");
 	}
 
 	@Override
@@ -147,7 +138,7 @@ public class HomeActivity extends Activity {
 	protected void onPause() {
 		super.onPause();
 
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause()");
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause");
 
 		FileLoader fileLoader = (FileLoader) loaderManager
 				.<byte[]> getLoader(FILE_LOADER_ID);
@@ -160,11 +151,32 @@ public class HomeActivity extends Activity {
 	}
 
 	@Override
+	protected void onStop() {
+		super.onStop();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStop");
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		if (mediaPlayerUtils.serviceBound) {
+			mediaPlayerUtils.unbind();
+		}
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onDestroy");
+	}
+
+	@Override
+	public void onBackPressed() {
+		super.onBackPressed();
+		mediaPlayerUtils.pausePlaying();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onBackPressed");
+	}
+
+	@Override
 	@Deprecated
 	public Object onRetainNonConfigurationInstance() {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(DOWNLOADED_FILE_KEY, downloadedMusicFile);
-		// map.put(MEDIA_PLAYER_KEY, mediaPlayer);
 	
 		Log.d(ACTIVITY_SERVICE, map
 				+ " onRetainNonConfigurationInstance called.");
