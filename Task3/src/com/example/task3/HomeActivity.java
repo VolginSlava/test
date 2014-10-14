@@ -164,7 +164,6 @@ public class HomeActivity extends Activity {
 	public Object onRetainNonConfigurationInstance() {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(DOWNLOADED_FILE_KEY, downloadedMusicFile);
-		// map.put(MEDIA_PLAYER_KEY, mediaPlayer);
 	
 		Log.d(ACTIVITY_SERVICE, map
 				+ " onRetainNonConfigurationInstance called.");
