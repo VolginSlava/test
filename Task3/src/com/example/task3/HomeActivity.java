@@ -107,7 +107,6 @@ public class HomeActivity extends Activity {
 		super.onRestart();
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onRestart");
 
-		// TODO remove notification menu
 		notificationsUtils.hide(NOTIFICATION_ID);
 	}
 
@@ -142,7 +141,6 @@ public class HomeActivity extends Activity {
 		super.onStop();
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStop");
 
-		// TODO add notification menu
 		Notification notification = notificationsUtils.create(NOTIFICATION_ID);
 		notificationsUtils.show(NOTIFICATION_ID, notification);
 	}
@@ -150,12 +148,11 @@ public class HomeActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		Log.d(ACTIVITY_SERVICE, "HomeActivity # onDestroy");
+
 		if (mediaPlayerUtils.serviceBound) {
 			mediaPlayerUtils.unbind();
 		}
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onDestroy");
-
-		// TODO remove notification menu
 		notificationsUtils.hide(NOTIFICATION_ID);
 	}
 
