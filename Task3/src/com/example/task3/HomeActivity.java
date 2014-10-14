@@ -36,27 +36,29 @@ public class HomeActivity extends Activity {
 	private static final String FILE_URL_KEY = "url";
 	private static final String FILE_URL_STRING = "http://www.directlinkupload.com/uploads/46.20.72.162/Jingle-Punks-Arriba-Mami.mp3";
 
-	private static final URL FILE_URL;
 	private static final String DOWNLOADED_FILE_KEY = "downloadedMusicFile";
+	private static final URL FILE_URL;
 	static {
-		URL url;
 		try {
-			url = new URL(FILE_URL_STRING);
+			FILE_URL = new URL(FILE_URL_STRING);
 		} catch (MalformedURLException e) {
-			Log.e(ACTIVITY_SERVICE, "", e);
-			url = null;
+			throw new RuntimeException(e);
 		}
-		FILE_URL = url;
 	}
+
 
 	private Button playButton;
 	private TextView label;
+
+	private ProgressDialogFragment progressDialogFragment;
 	private byte[] downloadedMusicFile;
+
 	private StatesUtils statesUtils = new StatesUtils();
 	private DialogUtils dialogUtils = new DialogUtils();
 	private LoaderUtils loaderUtils = new LoaderUtils();
 	private MediaPlayerUtils mediaPlayerUtils = new MediaPlayerUtils();
 	private NotificationsUtils notificationsUtils = new NotificationsUtils();
+
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -64,7 +66,7 @@ public class HomeActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 
-		// progressDialog = new ProgressDialogFragment();
+		progressDialogFragment = new ProgressDialogFragment();
 		label = (TextView) findViewById(R.id.v_status_label);
 		playButton = (Button) findViewById(R.id.v_play_button);
 		playButton.setOnClickListener(new OnClickListener() {
@@ -95,6 +97,8 @@ public class HomeActivity extends Activity {
 		} else {
 			mediaPlayerUtils.startMusicService();
 		}
+
+		loaderUtils.onCreate();
 
 		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
@@ -293,8 +297,6 @@ public class HomeActivity extends Activity {
 
 	private class DialogUtils implements CancelListener {
 
-		private ProgressDialogFragment progressDialogFragment = new ProgressDialogFragment();
-
 		private void showProgressDialog() {
 			progressDialogFragment.show(getFragmentManager(), "progressDialog");
 			// progressDialog = new MyDialogFragment();
@@ -315,11 +317,11 @@ public class HomeActivity extends Activity {
 		}
 
 		private void addCancelListener() {
-			progressDialogFragment.addCancelListener(this);
+			progressDialogFragment.addCancelListener(DialogUtils.this);
 		}
 
 		private void removeCancelListener() {
-			progressDialogFragment.removeCancelListener(this);
+			progressDialogFragment.removeCancelListener(DialogUtils.this);
 		}
 
 		@Override
@@ -333,26 +335,33 @@ public class HomeActivity extends Activity {
 
 		private static final int FILE_LOADER_ID = 1;
 
-		private LoaderManager loaderManager = getLoaderManager();
+		private LoaderManager loaderManager;
+
+		private void onCreate() {
+			loaderUtils.loaderManager = getLoaderManager();
+		}
 
 		private void initLoaderManager(Bundle bundle) {
 			loaderManager.initLoader(FILE_LOADER_ID, bundle, this);
 		}
 
 		private void addProgressListener() {
-			FileLoader fileLoader = (FileLoader) loaderManager
-					.<byte[]> getLoader(FILE_LOADER_ID);
+			FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
 			if (fileLoader != null) {
 				fileLoader.addProgressListener(this);
 			}
 		}
 
 		private void removeProgressListener() {
-			FileLoader fileLoader = (FileLoader) loaderManager
-					.<byte[]> getLoader(FILE_LOADER_ID);
+			FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
 			if (fileLoader != null) {
 				fileLoader.removeProgressListener(this);
 			}
+		}
+
+		private FileLoader getFileLoader(int fileLoaderId) {
+			return (FileLoader) loaderManager
+					.<byte[]> getLoader(fileLoaderId);
 		}
 
 		private boolean isFileDownloaded() {
@@ -402,7 +411,7 @@ public class HomeActivity extends Activity {
 
 		@Override
 		public void onProgress(int progress, int maxProgress) {
-			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment
+			ProgressDialog pd = (ProgressDialog) progressDialogFragment
 					.getDialog();
 
 			if (pd != null) {
