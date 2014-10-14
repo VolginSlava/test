@@ -63,8 +63,7 @@ public class HomeActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 
-		// progressDialogFragment = new ProgressDialogFragment();
-		dialogUtils.onCreate();// TODO may need fixing
+		dialogUtils.onCreate();
 
 		label = (TextView) findViewById(R.id.v_status_label);
 		playButton = (Button) findViewById(R.id.v_play_button);
@@ -74,16 +73,12 @@ public class HomeActivity extends Activity {
 			public void onClick(View v) {
 				if (isPauseButtonPressed()) {
 					statesUtils.setIdleState();
-
 					mediaPlayerUtils.pausePlaying();
 				} else if (isPlayButtonPressed()) {
 					statesUtils.setPlayingState();
-
 					mediaPlayerUtils.startPlaying();
 				}
-				Log.d(ACTIVITY_SERVICE,
-						"HomeActivity # OnPlayButtonEvent. IsPlaying: "
-								+ mediaPlayerUtils.isPlaying());
+				Log.d(ACTIVITY_SERVICE, "HomeActivity # OnPlayButtonEvent. IsPlaying: " + mediaPlayerUtils.isPlaying());
 			}
 		});
 
@@ -99,7 +94,6 @@ public class HomeActivity extends Activity {
 		}
 
 		loaderUtils.onCreate();
-
 		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
 			bundle.putSerializable(FILE_URL_KEY, FILE_URL);
@@ -120,10 +114,6 @@ public class HomeActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStart");
-
-		// statesUtils.onResumeUpdateState();
-		// loaderUtils.addProgressListener();
-		// dialogUtils.addCancelListener();
 	}
 
 	@Override
@@ -139,7 +129,6 @@ public class HomeActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause");
 
 		loaderUtils.removeProgressListener();
@@ -151,10 +140,6 @@ public class HomeActivity extends Activity {
 	protected void onStop() {
 		super.onStop();
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStop");
-
-		// loaderUtils.removeProgressListener();
-		// dialogUtils.removeCancelListener();
-		// dialogUtils.hideProgressDialog();
 
 		// TODO add notification menu
 		Notification notification = notificationsUtils.create(NOTIFICATION_ID);
