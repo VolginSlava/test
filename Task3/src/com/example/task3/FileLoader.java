@@ -62,10 +62,8 @@ public class FileLoader extends AsyncTaskLoader<byte[]> {
 			in = connection.getInputStream();
 			download(in, out, connection.getContentLength());
 		} finally {
-			out.close();
-			if (in != null) {
-				in.close();
-			}
+			Finally.close(out);
+			Finally.close(in);
 		}
 		return file.toByteArray();
 	}

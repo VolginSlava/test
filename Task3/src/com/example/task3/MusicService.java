@@ -11,7 +11,6 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -81,7 +80,7 @@ public class MusicService extends Service implements OnPreparedListener,
 			Log.e(MUSIC_SERVICE, "Can't read data from temp file.");
 			throw new RuntimeException(e);
 		} finally {
-			closeFinally(in);
+			Finally.close(in);
 		}
 	}
 
@@ -92,7 +91,7 @@ public class MusicService extends Service implements OnPreparedListener,
 		try {
 			out.write(bytes);
 		} finally {
-			closeFinally(out);
+			Finally.close(out);
 		}
 		return temp;
 	}
@@ -152,16 +151,5 @@ public class MusicService extends Service implements OnPreparedListener,
 	public void onPrepared(MediaPlayer player) {
 		prepared = true;
 		resumeMusic();
-	}
-
-	private void closeFinally(Closeable c) {
-		try {
-			if (c != null) {
-				c.close();
-			}
-		} catch (IOException e) {
-			Log.i(MUSIC_SERVICE,
-					"Exception occures while trying to close resource", e);
-		}
 	}
 }
