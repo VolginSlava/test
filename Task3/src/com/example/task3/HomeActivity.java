@@ -27,9 +27,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 
-import com.example.task3.FileLoader.ProgressListener;
 import com.example.task3.MusicService.MusicBinder;
 import com.example.task3.ProgressDialogFragment.CancelListener;
+import com.example.task3.loader.FileLoader;
+import com.example.task3.loader.FileLoader.ProgressListener;
 
 public class HomeActivity extends Activity {
 

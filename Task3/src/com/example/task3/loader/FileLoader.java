@@ -1,4 +1,4 @@
-package com.example.task3;
+package com.example.task3.loader;
 
 import android.content.AsyncTaskLoader;
 import android.content.Context;
@@ -12,6 +12,10 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashSet;
 
+import com.example.task3.Finally;
+
+
+@Deprecated
 public class FileLoader extends AsyncTaskLoader<byte[]> {
 
 	public static interface ProgressListener {
