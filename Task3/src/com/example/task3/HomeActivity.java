@@ -25,7 +25,6 @@ import android.widget.TextView;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
 
 import com.example.task3.MusicService.MusicBinder;
 import com.example.task3.ProgressDialogFragment.CancelListener;
@@ -34,11 +33,11 @@ import com.example.task3.loader.Result;
 
 public class HomeActivity extends Activity {
 
+	private static final String DOWNLOAD_COMPLETE_KEY = "downloadComplete";
 	private static final int NOTIFICATION_ID = 2;
 	private static final String FILE_URL_KEY = "url";
 	private static final String FILE_URL_STRING = "http://www.directlinkupload.com/uploads/46.20.72.162/Jingle-Punks-Arriba-Mami.mp3";
 
-	private static final String DOWNLOADED_FILE_KEY = "downloadedMusicFile";
 	private static final URL FILE_URL;
 	static {
 		try {
@@ -57,11 +56,14 @@ public class HomeActivity extends Activity {
 	private MediaPlayerUtils mediaPlayerUtils = new MediaPlayerUtils();
 	private NotificationsUtils notificationsUtils = new NotificationsUtils();
 
-	@SuppressWarnings("deprecation")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
+
+		if (savedInstanceState != null) {
+			loaderUtils.downloadComplete = savedInstanceState.getBoolean(DOWNLOAD_COMPLETE_KEY, false);
+		}
 
 		dialogUtils.onCreate();
 
@@ -82,11 +84,7 @@ public class HomeActivity extends Activity {
 			}
 		});
 
-		if (getLastNonConfigurationInstance() != null) {
-			@SuppressWarnings("unchecked")
-			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
-			loaderUtils.downloadedMusicFile = (byte[]) map.get(DOWNLOADED_FILE_KEY);
-
+		if (savedInstanceState != null) { // TODO assume on first time the activity is started we receive null in savedInstanceState
 			mediaPlayerUtils.bind();
 		} else {
 			mediaPlayerUtils.startMusicService();
@@ -98,6 +96,12 @@ public class HomeActivity extends Activity {
 			bundle.putSerializable(FILE_URL_KEY, FILE_URL);
 			loaderUtils.initLoaderManager(bundle);
 		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putBoolean(DOWNLOAD_COMPLETE_KEY, loaderUtils.downloadComplete);
 	}
 
 	@Override
@@ -120,7 +124,6 @@ public class HomeActivity extends Activity {
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onResume");
 
 		statesUtils.onResumeUpdateState();
-		// loaderUtils.addProgressListener();
 		dialogUtils.addCancelListener();
 	}
 
@@ -129,7 +132,6 @@ public class HomeActivity extends Activity {
 		super.onPause();
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause");
 
-		// loaderUtils.removeProgressListener();
 		dialogUtils.removeCancelListener();
 		dialogUtils.hideProgressDialog();
 	}
@@ -169,16 +171,6 @@ public class HomeActivity extends Activity {
 
 	private boolean isPlayButtonPressed() {
 		return !isPauseButtonPressed();
-	}
-
-	@Override
-	@Deprecated
-	public Object onRetainNonConfigurationInstance() {
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put(DOWNLOADED_FILE_KEY, loaderUtils.downloadedMusicFile);
-
-		Log.d(ACTIVITY_SERVICE, map + " onRetainNonConfigurationInstance called.");
-		return map;
 	}
 
 	@Override
@@ -320,15 +312,13 @@ public class HomeActivity extends Activity {
 		}
 	}
 
-	private class LoaderUtils implements LoaderCallbacks<Result>
-	// , ProgressListener
-	{
+	private class LoaderUtils implements LoaderCallbacks<Result> {
 
 		private static final int FILE_LOADER_ID = 1;
 
 		private LoaderManager loaderManager;
+		private boolean downloadComplete = false;
 
-		private byte[] downloadedMusicFile;
 
 		private void onCreate() {
 			loaderUtils.loaderManager = getLoaderManager();
@@ -338,26 +328,8 @@ public class HomeActivity extends Activity {
 			loaderManager.initLoader(FILE_LOADER_ID, bundle, this);
 		}
 
-		// private void addProgressListener() {
-		// FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
-		// if (fileLoader != null) {
-		// fileLoader.addProgressListener(this);
-		// }
-		// }
-		//
-		// private void removeProgressListener() {
-		// FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
-		// if (fileLoader != null) {
-		// fileLoader.removeProgressListener(this);
-		// }
-		// }
-		//
-		// private FileLoader getFileLoader(int fileLoaderId) {
-		// return (FileLoader) loaderManager.<byte[]> getLoader(fileLoaderId);
-		// }
-
 		private boolean isFileDownloaded() {
-			return downloadedMusicFile != null;
+			return downloadComplete;
 		}
 
 		@Override
@@ -409,7 +381,7 @@ public class HomeActivity extends Activity {
 			Log.d(ACTIVITY_SERVICE, "onLoadFinished. File downloading was finished. Result: "
 					+ (bytes != null ? String.format("%,d bytes.", bytes.length) : null));
 
-			downloadedMusicFile = bytes;
+			downloadComplete = true;
 
 			Handler handler = new Handler();
 			handler.post(new Runnable() {
@@ -424,25 +396,13 @@ public class HomeActivity extends Activity {
 			});
 		}
 
-		private void onException(Throwable exception) {
+		private void onException(Throwable exception) { // TODO maybe some useful code should be placed here
 			Log.e(ACTIVITY_SERVICE, "", exception);
-			// TODO maybe some useful code should be placed here
 		}
 
-		private void onCancel() {
+		private void onCancel() { // TODO maybe some useful code should be placed here
 			Log.d(ACTIVITY_SERVICE, "Downloading was canceled");
-			// TODO maybe some useful code should be placed here
 		}
-
-		// @Override
-		// public void onProgress(int progress, int maxProgress) {
-		// ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment.getDialog();
-		//
-		// if (pd != null) {
-		// pd.setMax(maxProgress);
-		// pd.setProgress(progress);
-		// }
-		// }
 	}
 
 	private class MediaPlayerUtils {
