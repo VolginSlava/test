@@ -29,8 +29,8 @@ import java.util.HashMap;
 
 import com.example.task3.MusicService.MusicBinder;
 import com.example.task3.ProgressDialogFragment.CancelListener;
-import com.example.task3.loader.FileLoader;
-import com.example.task3.loader.FileLoader.ProgressListener;
+import com.example.task3.loader.NewFileLoader;
+import com.example.task3.loader.Result;
 
 public class HomeActivity extends Activity {
 
@@ -120,7 +120,7 @@ public class HomeActivity extends Activity {
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onResume");
 
 		statesUtils.onResumeUpdateState();
-		loaderUtils.addProgressListener();
+		// loaderUtils.addProgressListener();
 		dialogUtils.addCancelListener();
 	}
 
@@ -129,7 +129,7 @@ public class HomeActivity extends Activity {
 		super.onPause();
 		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause");
 
-		loaderUtils.removeProgressListener();
+		// loaderUtils.removeProgressListener();
 		dialogUtils.removeCancelListener();
 		dialogUtils.hideProgressDialog();
 	}
@@ -320,7 +320,9 @@ public class HomeActivity extends Activity {
 		}
 	}
 
-	private class LoaderUtils implements LoaderCallbacks<byte[]>, ProgressListener {
+	private class LoaderUtils implements LoaderCallbacks<Result>
+	// , ProgressListener
+	{
 
 		private static final int FILE_LOADER_ID = 1;
 
@@ -336,34 +338,34 @@ public class HomeActivity extends Activity {
 			loaderManager.initLoader(FILE_LOADER_ID, bundle, this);
 		}
 
-		private void addProgressListener() {
-			FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
-			if (fileLoader != null) {
-				fileLoader.addProgressListener(this);
-			}
-		}
-
-		private void removeProgressListener() {
-			FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
-			if (fileLoader != null) {
-				fileLoader.removeProgressListener(this);
-			}
-		}
-
-		private FileLoader getFileLoader(int fileLoaderId) {
-			return (FileLoader) loaderManager.<byte[]> getLoader(fileLoaderId);
-		}
+		// private void addProgressListener() {
+		// FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
+		// if (fileLoader != null) {
+		// fileLoader.addProgressListener(this);
+		// }
+		// }
+		//
+		// private void removeProgressListener() {
+		// FileLoader fileLoader = getFileLoader(FILE_LOADER_ID);
+		// if (fileLoader != null) {
+		// fileLoader.removeProgressListener(this);
+		// }
+		// }
+		//
+		// private FileLoader getFileLoader(int fileLoaderId) {
+		// return (FileLoader) loaderManager.<byte[]> getLoader(fileLoaderId);
+		// }
 
 		private boolean isFileDownloaded() {
 			return downloadedMusicFile != null;
 		}
 
 		@Override
-		public Loader<byte[]> onCreateLoader(int id, Bundle args) {
+		public Loader<Result> onCreateLoader(int id, Bundle args) {
 			switch (id) {
 			case FILE_LOADER_ID:
 				Log.d(ACTIVITY_SERVICE, "onCreateLoader. New loader has been created.");
-				return new FileLoader(getApplicationContext(), (URL) args.getSerializable(FILE_URL_KEY));
+				return new NewFileLoader(getApplicationContext(), (URL) args.getSerializable(FILE_URL_KEY));
 			default:
 				Log.e(ACTIVITY_SERVICE, String.format("onCreateLoader. Unknown loader id: %d.", id));
 				return null;
@@ -371,9 +373,42 @@ public class HomeActivity extends Activity {
 		}
 
 		@Override
-		public void onLoadFinished(Loader<byte[]> loader, byte[] bytes) {
+		public void onLoaderReset(Loader<Result> arg0) {
+			Log.d(ACTIVITY_SERVICE, "HomeActivity # onLoaderReset");
+		}
+
+		@Override
+		public void onLoadFinished(Loader<Result> loader, Result result) {
+			switch (result.state)
+			{
+			case IN_PROGRESS:
+				onProgress(result.progress, result.maxProgress);
+				break;
+			case FINISHED:
+				onFinish(result.bytes);
+				break;
+			case EXCEPTION:
+				onException(result.exception);
+				break;
+			case CANCELED:
+				onCancel();
+				break;
+			}
+		}
+
+		private void onProgress(int progress, int maxProgress) {
+			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment.getDialog();
+
+			if (pd != null) {
+				pd.setMax(maxProgress);
+				pd.setProgress(progress);
+			}
+		}
+
+		private void onFinish(final byte[] bytes) {
 			Log.d(ACTIVITY_SERVICE, "onLoadFinished. File downloading was finished. Result: "
 					+ (bytes != null ? String.format("%,d bytes.", bytes.length) : null));
+
 			downloadedMusicFile = bytes;
 
 			Handler handler = new Handler();
@@ -382,25 +417,32 @@ public class HomeActivity extends Activity {
 				@Override
 				public void run() {
 					statesUtils.setIdleState();
-					mediaPlayerUtils.musicService.setMusic(downloadedMusicFile);
+					// if (!mediaPlayerUtils.musicService.isPlaying()) { // TODO check this if condition  |  NEVER PUT THIS IF HERE!!!!!!!!!!!!!!!!!!!!!!
+						mediaPlayerUtils.musicService.setMusic(bytes);
+					// }
 				}
 			});
 		}
 
-		@Override
-		public void onLoaderReset(Loader<byte[]> arg0) {
-			Log.d(ACTIVITY_SERVICE, "HomeActivity # onLoaderReset");
+		private void onException(Throwable exception) {
+			Log.e(ACTIVITY_SERVICE, "", exception);
+			// TODO maybe some useful code should be placed here
 		}
 
-		@Override
-		public void onProgress(int progress, int maxProgress) {
-			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment.getDialog();
-
-			if (pd != null) {
-				pd.setMax(maxProgress);
-				pd.setProgress(progress);
-			}
+		private void onCancel() {
+			Log.d(ACTIVITY_SERVICE, "Downloading was canceled");
+			// TODO maybe some useful code should be placed here
 		}
+
+		// @Override
+		// public void onProgress(int progress, int maxProgress) {
+		// ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment.getDialog();
+		//
+		// if (pd != null) {
+		// pd.setMax(maxProgress);
+		// pd.setProgress(progress);
+		// }
+		// }
 	}
 
 	private class MediaPlayerUtils {
