@@ -73,16 +73,14 @@ public class SplashScreenActivity extends Activity {
 	}
 
 	private long getTimeout() {
-		long timeout = SPLASH_TIMEOUT
-				- (System.currentTimeMillis() - creationTime);
+		long timeout = SPLASH_TIMEOUT - (System.currentTimeMillis() - creationTime);
 		return timeout >= 0 ? timeout : 0;
 	}
 
 	private void startHomeActivity() {
 		Log.d(ACTIVITY_SERVICE, "Starting new home activity.");
 
-		Intent intent = new Intent(SplashScreenActivity.this,
-				HomeActivity.class);
+		Intent intent = new Intent(SplashScreenActivity.this, HomeActivity.class);
 		startActivity(intent);
 		finish();
 	}

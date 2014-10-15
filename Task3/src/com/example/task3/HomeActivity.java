@@ -48,7 +48,6 @@ public class HomeActivity extends Activity {
 		}
 	}
 
-
 	private Button playButton;
 	private TextView label;
 
@@ -57,7 +56,6 @@ public class HomeActivity extends Activity {
 	private LoaderUtils loaderUtils = new LoaderUtils();
 	private MediaPlayerUtils mediaPlayerUtils = new MediaPlayerUtils();
 	private NotificationsUtils notificationsUtils = new NotificationsUtils();
-
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -87,8 +85,7 @@ public class HomeActivity extends Activity {
 		if (getLastNonConfigurationInstance() != null) {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> map = (HashMap<String, Object>) getLastNonConfigurationInstance();
-			loaderUtils.downloadedMusicFile = (byte[]) map
-					.get(DOWNLOADED_FILE_KEY);
+			loaderUtils.downloadedMusicFile = (byte[]) map.get(DOWNLOADED_FILE_KEY);
 
 			mediaPlayerUtils.bind();
 		} else {
@@ -180,8 +177,7 @@ public class HomeActivity extends Activity {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(DOWNLOADED_FILE_KEY, loaderUtils.downloadedMusicFile);
 
-		Log.d(ACTIVITY_SERVICE, map
-				+ " onRetainNonConfigurationInstance called.");
+		Log.d(ACTIVITY_SERVICE, map + " onRetainNonConfigurationInstance called.");
 		return map;
 	}
 
@@ -211,11 +207,9 @@ public class HomeActivity extends Activity {
 		@SuppressWarnings("deprecation")
 		private Notification create(int notificationId) {
 			Intent intent = new Intent(HomeActivity.this, HomeActivity.class);
-			PendingIntent pendingIntent = PendingIntent.getActivity(
-					HomeActivity.this, REQUEST_CODE, intent, 0);
+			PendingIntent pendingIntent = PendingIntent.getActivity(HomeActivity.this, REQUEST_CODE, intent, 0);
 
-			Notification.Builder builder = new Notification.Builder(
-					HomeActivity.this);
+			Notification.Builder builder = new Notification.Builder(HomeActivity.this);
 
 			builder.setContentTitle("Title")
 					.setContentText("text")
@@ -326,8 +320,7 @@ public class HomeActivity extends Activity {
 		}
 	}
 
-	private class LoaderUtils implements LoaderCallbacks<byte[]>,
-			ProgressListener {
+	private class LoaderUtils implements LoaderCallbacks<byte[]>, ProgressListener {
 
 		private static final int FILE_LOADER_ID = 1;
 
@@ -358,8 +351,7 @@ public class HomeActivity extends Activity {
 		}
 
 		private FileLoader getFileLoader(int fileLoaderId) {
-			return (FileLoader) loaderManager
-					.<byte[]> getLoader(fileLoaderId);
+			return (FileLoader) loaderManager.<byte[]> getLoader(fileLoaderId);
 		}
 
 		private boolean isFileDownloaded() {
@@ -370,24 +362,18 @@ public class HomeActivity extends Activity {
 		public Loader<byte[]> onCreateLoader(int id, Bundle args) {
 			switch (id) {
 			case FILE_LOADER_ID:
-				Log.d(ACTIVITY_SERVICE,
-						"onCreateLoader. New loader has been created.");
-
-				return new FileLoader(getApplicationContext(),
-						(URL) args.getSerializable(FILE_URL_KEY));
+				Log.d(ACTIVITY_SERVICE, "onCreateLoader. New loader has been created.");
+				return new FileLoader(getApplicationContext(), (URL) args.getSerializable(FILE_URL_KEY));
 			default:
-				Log.e(ACTIVITY_SERVICE, String.format(
-						"onCreateLoader. Unknown loader id: %d.", id));
+				Log.e(ACTIVITY_SERVICE, String.format("onCreateLoader. Unknown loader id: %d.", id));
 				return null;
 			}
 		}
 
 		@Override
 		public void onLoadFinished(Loader<byte[]> loader, byte[] bytes) {
-			Log.d(ACTIVITY_SERVICE,
-					"onLoadFinished. File downloading was finished. Result: "
-							+ (bytes != null ? String.format("%,d bytes.",
-									bytes.length) : null));
+			Log.d(ACTIVITY_SERVICE, "onLoadFinished. File downloading was finished. Result: "
+					+ (bytes != null ? String.format("%,d bytes.", bytes.length) : null));
 			downloadedMusicFile = bytes;
 
 			Handler handler = new Handler();
@@ -396,7 +382,6 @@ public class HomeActivity extends Activity {
 				@Override
 				public void run() {
 					statesUtils.setIdleState();
-
 					mediaPlayerUtils.musicService.setMusic(downloadedMusicFile);
 				}
 			});
@@ -409,8 +394,7 @@ public class HomeActivity extends Activity {
 
 		@Override
 		public void onProgress(int progress, int maxProgress) {
-			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment
-					.getDialog();
+			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment.getDialog();
 
 			if (pd != null) {
 				pd.setMax(maxProgress);
@@ -436,21 +420,17 @@ public class HomeActivity extends Activity {
 				statesUtils.onServiceConnectedUpdateState();
 
 				if (loaderUtils.isFileDownloaded()) {
-					Log.d(ACTIVITY_SERVICE,
-							"ServiceConnection # onServiceConnected, downloadedFile != null. Service bound: "
-									+ serviceBound);
+					Log.d(ACTIVITY_SERVICE, "ServiceConnection # onServiceConnected, downloadedFile != null. Service bound: " + serviceBound);
 				}
 
-				Log.d("ServiceConnection",
-						"MediaPlayerUtils # onServiceConnected");
+				Log.d("ServiceConnection", "MediaPlayerUtils # onServiceConnected");
 			}
 
 			@Override
 			public void onServiceDisconnected(ComponentName name) {
 				serviceBound = false;
 
-				Log.d("ServiceConnection",
-						"MediaPlayerUtils # onServiceDisconnected");
+				Log.d("ServiceConnection", "MediaPlayerUtils # onServiceDisconnected");
 			}
 		};
 
@@ -472,8 +452,7 @@ public class HomeActivity extends Activity {
 			if (playIntent == null) {
 				playIntent = new Intent(HomeActivity.this, MusicService.class);
 			}
-			boolean bind = bindService(playIntent, musicConnection,
-					Context.BIND_AUTO_CREATE);
+			boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
 
 			Log.d(ACTIVITY_SERVICE, "Bind: " + bind);
 		}

@@ -73,9 +73,7 @@ public class MusicService extends Service implements OnPreparedListener,
 		} catch (IllegalArgumentException e) {
 			Log.e(MUSIC_SERVICE, "", e);
 		} catch (IllegalStateException e) {
-			Log.e(MUSIC_SERVICE,
-					"Exception while trying to set source data to mediaPlayer in incorrect state.",
-					e);
+			Log.e(MUSIC_SERVICE, "Exception while trying to set source data to mediaPlayer in incorrect state.", e);
 		} catch (IOException e) {
 			Log.e(MUSIC_SERVICE, "Can't read data from temp file.");
 			throw new RuntimeException(e);
@@ -84,8 +82,7 @@ public class MusicService extends Service implements OnPreparedListener,
 		}
 	}
 
-	private File saveAsTempFile(String prefix, String suffix, byte[] bytes)
-			throws IOException, FileNotFoundException {
+	private File saveAsTempFile(String prefix, String suffix, byte[] bytes) throws IOException, FileNotFoundException {
 		File temp = File.createTempFile(prefix, suffix, getCacheDir());
 		FileOutputStream out = new FileOutputStream(temp);
 		try {
