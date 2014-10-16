@@ -17,6 +17,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import com.example.task3.tools.Finally;
+import com.example.task3.tools.Logging;
+
 public class MusicService extends Service implements OnPreparedListener,
 		OnCompletionListener, OnErrorListener {
 
@@ -25,6 +28,7 @@ public class MusicService extends Service implements OnPreparedListener,
 	public class MusicBinder extends Binder {
 
 		public MusicService getService() {
+			Logging.logEntrance(MUSIC_SERVICE);
 			return MusicService.this;
 		}
 	}
@@ -37,18 +41,22 @@ public class MusicService extends Service implements OnPreparedListener,
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		Logging.logEntrance(MUSIC_SERVICE);
 
 		player = new MediaPlayer();
 		addPlayerListeners();
 	}
 
 	private void addPlayerListeners() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		player.setOnPreparedListener(this);
 		player.setOnErrorListener(this);
 		player.setOnCompletionListener(this);
 	}
 
 	public void setMusic(byte[] bytes) {
+		Logging.logEntrance(MUSIC_SERVICE);
+
 		fileBytes = bytes;
 		prepared = false;
 		player.release();
@@ -83,6 +91,7 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	private File saveAsTempFile(String prefix, String suffix, byte[] bytes) throws IOException, FileNotFoundException {
+		Logging.logEntrance(MUSIC_SERVICE);
 		File temp = File.createTempFile(prefix, suffix, getCacheDir());
 		FileOutputStream out = new FileOutputStream(temp);
 		try {
@@ -94,6 +103,7 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	public void playMusic() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		if (!prepared) {
 			player.prepareAsync();
 		} else {
@@ -102,14 +112,17 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	public void pauseMusic() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		player.pause();
 	}
 
 	private void resumeMusic() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		player.start();
 	}
 
 	public boolean isPlaying() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		boolean result = false;
 		try{
 			result = prepared && player.isPlaying();
@@ -121,11 +134,13 @@ public class MusicService extends Service implements OnPreparedListener,
 
 	@Override
 	public IBinder onBind(Intent intent) {
+		Logging.logEntrance(MUSIC_SERVICE);
 		return musicBind;
 	}
 
 	@Override
 	public boolean onUnbind(Intent intent) {
+		Logging.logEntrance(MUSIC_SERVICE);
 		if (isPlaying()) {
 			player.stop();
 		}
@@ -136,16 +151,19 @@ public class MusicService extends Service implements OnPreparedListener,
 	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		// TODO Auto-generated method stub
+		Logging.logEntrance(MUSIC_SERVICE);
 		return false;
 	}
 
 	@Override
 	public void onCompletion(MediaPlayer player) {
+		Logging.logEntrance(MUSIC_SERVICE);
 		player.start();
 	}
 
 	@Override
 	public void onPrepared(MediaPlayer player) {
+		Logging.logEntrance(MUSIC_SERVICE);
 		prepared = true;
 		resumeMusic();
 	}

@@ -10,8 +10,9 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-import com.example.task3.Finally;
 import com.example.task3.defaultloader.DefaultLoader;
+import com.example.task3.tools.Finally;
+import com.example.task3.tools.Logging;
 
 public class NewFileLoader extends DefaultLoader<Result> {
 
@@ -25,10 +26,12 @@ public class NewFileLoader extends DefaultLoader<Result> {
 		super(context);
 		this.url = url;
 
+		Logging.logEntrance(FILE_LOADER);
 	}
 
 	@Override
 	public Result loadInBackground() {
+		Logging.logEntrance(FILE_LOADER);
 		try {
 			byte[] b = download(url);
 			return Result.finished(b);
@@ -36,11 +39,13 @@ public class NewFileLoader extends DefaultLoader<Result> {
 			Log.e(FILE_LOADER, "Can't load file from URL: " + url + " | " + e, e);
 			return Result.exception(e);
 		} catch (InterruptedException e) {
+			// deliverResult(Result.canceled());
 			return Result.canceled();
 		}
 	}
 
 	public byte[] download(URL url) throws IOException, InterruptedException {
+		Logging.logEntrance(FILE_LOADER);
 		ByteArrayOutputStream file = new ByteArrayOutputStream();
 
 		InputStream in = null;
@@ -57,6 +62,7 @@ public class NewFileLoader extends DefaultLoader<Result> {
 	}
 
 	private void download(InputStream in, OutputStream out, int size) throws IOException, InterruptedException {
+		Logging.logEntrance(FILE_LOADER);
 		byte[] b = new byte[BUFFER_SIZE];
 		int readBytes;
 		int downloaded = 0;
@@ -80,7 +86,7 @@ public class NewFileLoader extends DefaultLoader<Result> {
 			prevMaxProgress = maxProgress;
 
 			deliverResult(Result.inProgress(progress, maxProgress));
-			Log.d(FILE_LOADER, String.format("%d / %d", progress, maxProgress));
+			Logging.logEntrance(FILE_LOADER, String.format("%d / %d", progress, maxProgress));
 		}
 	}
 

@@ -1,4 +1,4 @@
-package com.example.task3;
+package com.example.task3.tools;
 
 import android.util.Log;
 

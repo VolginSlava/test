@@ -1,7 +1,6 @@
 package com.example.task3;
 
 import android.app.Activity;
-import android.app.LoaderManager;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -30,6 +29,7 @@ import com.example.task3.MusicService.MusicBinder;
 import com.example.task3.ProgressDialogFragment.CancelListener;
 import com.example.task3.loader.NewFileLoader;
 import com.example.task3.loader.Result;
+import com.example.task3.tools.Logging;
 
 public class HomeActivity extends Activity {
 
@@ -61,10 +61,10 @@ public class HomeActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 
+		Logging.logEntrance(ACTIVITY_SERVICE);
 		if (savedInstanceState != null) {
 			loaderUtils.downloadComplete = savedInstanceState.getBoolean(DOWNLOAD_COMPLETE_KEY, false);
 		}
-
 		dialogUtils.onCreate();
 
 		label = (TextView) findViewById(R.id.v_status_label);
@@ -80,7 +80,7 @@ public class HomeActivity extends Activity {
 					statesUtils.setPlayingState();
 					mediaPlayerUtils.startPlaying();
 				}
-				Log.d(ACTIVITY_SERVICE, "HomeActivity # OnPlayButtonEvent. IsPlaying: " + mediaPlayerUtils.isPlaying());
+				Logging.logEntrance(ACTIVITY_SERVICE, "IsPlaying: " + mediaPlayerUtils.isPlaying());
 			}
 		});
 
@@ -90,38 +90,45 @@ public class HomeActivity extends Activity {
 			mediaPlayerUtils.startMusicService();
 		}
 
-		loaderUtils.onCreate();
 		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
 			bundle.putSerializable(FILE_URL_KEY, FILE_URL);
-			loaderUtils.initLoaderManager(bundle);
+			getLoaderManager().initLoader(LoaderUtils.FILE_LOADER_ID, bundle, loaderUtils);
 		}
 	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+		Logging.logEntrance(ACTIVITY_SERVICE, "Download complete: " + loaderUtils.downloadComplete);
+
 		outState.putBoolean(DOWNLOAD_COMPLETE_KEY, loaderUtils.downloadComplete);
 	}
 
 	@Override
 	protected void onRestart() {
 		super.onRestart();
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onRestart");
+		Logging.logEntrance(ACTIVITY_SERVICE);
 
 		notificationsUtils.hide(NOTIFICATION_ID);
+
+		// if (!loaderUtils.isFileDownloaded()) {
+		// Bundle bundle = new Bundle();
+		// bundle.putSerializable(FILE_URL_KEY, FILE_URL);
+		// getLoaderManager().initLoader(LoaderUtils.FILE_LOADER_ID, bundle, loaderUtils);
+		// }
 	}
 
 	@Override
 	protected void onStart() {
 		super.onStart();
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStart");
+		Logging.logEntrance(ACTIVITY_SERVICE);
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onResume");
+		Logging.logEntrance(ACTIVITY_SERVICE);
 
 		statesUtils.onResumeUpdateState();
 		dialogUtils.addCancelListener();
@@ -130,7 +137,7 @@ public class HomeActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onPause");
+		Logging.logEntrance(ACTIVITY_SERVICE);
 
 		dialogUtils.removeCancelListener();
 		dialogUtils.hideProgressDialog();
@@ -139,7 +146,7 @@ public class HomeActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onStop");
+		Logging.logEntrance(ACTIVITY_SERVICE);
 
 		Notification notification = notificationsUtils.create(NOTIFICATION_ID);
 		notificationsUtils.show(NOTIFICATION_ID, notification);
@@ -148,7 +155,7 @@ public class HomeActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onDestroy");
+		Logging.logEntrance(ACTIVITY_SERVICE);
 
 		if (mediaPlayerUtils.serviceBound) {
 			mediaPlayerUtils.unbind();
@@ -162,7 +169,7 @@ public class HomeActivity extends Activity {
 		if (mediaPlayerUtils.isPlaying()) {
 			mediaPlayerUtils.pausePlaying();
 		}
-		Log.d(ACTIVITY_SERVICE, "HomeActivity # onBackPressed");
+		Logging.logEntrance(ACTIVITY_SERVICE);
 	}
 
 	private boolean isPauseButtonPressed() {
@@ -299,15 +306,18 @@ public class HomeActivity extends Activity {
 		}
 
 		private void addCancelListener() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			progressDialogFragment.addCancelListener(DialogUtils.this);
 		}
 
 		private void removeCancelListener() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			progressDialogFragment.removeCancelListener(DialogUtils.this);
 		}
 
 		@Override
 		public void onCancel() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			finish();
 		}
 	}
@@ -316,19 +326,11 @@ public class HomeActivity extends Activity {
 
 		private static final int FILE_LOADER_ID = 1;
 
-		private LoaderManager loaderManager;
 		private boolean downloadComplete = false;
 
 
-		private void onCreate() {
-			loaderUtils.loaderManager = getLoaderManager();
-		}
-
-		private void initLoaderManager(Bundle bundle) {
-			loaderManager.initLoader(FILE_LOADER_ID, bundle, this);
-		}
-
 		private boolean isFileDownloaded() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			return downloadComplete;
 		}
 
@@ -336,21 +338,22 @@ public class HomeActivity extends Activity {
 		public Loader<Result> onCreateLoader(int id, Bundle args) {
 			switch (id) {
 			case FILE_LOADER_ID:
-				Log.d(ACTIVITY_SERVICE, "onCreateLoader. New loader has been created.");
+				Logging.logEntranceExtra("New loader has been created.");
 				return new NewFileLoader(getApplicationContext(), (URL) args.getSerializable(FILE_URL_KEY));
 			default:
-				Log.e(ACTIVITY_SERVICE, String.format("onCreateLoader. Unknown loader id: %d.", id));
+				Logging.logEntranceExtra("Unknown loader id: " + id);
 				return null;
 			}
 		}
 
 		@Override
 		public void onLoaderReset(Loader<Result> arg0) {
-			Log.d(ACTIVITY_SERVICE, "HomeActivity # onLoaderReset");
+			Logging.logEntrance(ACTIVITY_SERVICE);
 		}
 
 		@Override
 		public void onLoadFinished(Loader<Result> loader, Result result) {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			switch (result.state)
 			{
 			case IN_PROGRESS:
@@ -369,6 +372,7 @@ public class HomeActivity extends Activity {
 		}
 
 		private void onProgress(int progress, int maxProgress) {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			ProgressDialog pd = (ProgressDialog) dialogUtils.progressDialogFragment.getDialog();
 
 			if (pd != null) {
@@ -378,9 +382,9 @@ public class HomeActivity extends Activity {
 		}
 
 		private void onFinish(final byte[] bytes) {
-			Log.d(ACTIVITY_SERVICE, "onLoadFinished. File downloading was finished. Result: "
+			Logging.logEntrance(ACTIVITY_SERVICE, "File downloading was finished. Result: "
 					+ (bytes != null ? String.format("%,d bytes.", bytes.length) : null));
-
+			
 			downloadComplete = true;
 
 			Handler handler = new Handler();
@@ -401,7 +405,7 @@ public class HomeActivity extends Activity {
 		}
 
 		private void onCancel() { // TODO maybe some useful code should be placed here
-			Log.d(ACTIVITY_SERVICE, "Downloading was canceled");
+			Logging.logEntrance(ACTIVITY_SERVICE, "Downloading was canceled");
 		}
 	}
 
@@ -414,6 +418,7 @@ public class HomeActivity extends Activity {
 
 			@Override
 			public void onServiceConnected(ComponentName name, IBinder service) {
+				Logging.logEntrance("ServiceConnection");
 				MusicBinder binder = (MusicBinder) service;
 
 				musicService = binder.getService();
@@ -422,21 +427,19 @@ public class HomeActivity extends Activity {
 				statesUtils.onServiceConnectedUpdateState();
 
 				if (loaderUtils.isFileDownloaded()) {
-					Log.d(ACTIVITY_SERVICE, "ServiceConnection # onServiceConnected, downloadedFile != null. Service bound: " + serviceBound);
+					Logging.logEntrance(ACTIVITY_SERVICE, "Downloaded file != null. Service bound: " + serviceBound);
 				}
-
-				Log.d("ServiceConnection", "MediaPlayerUtils # onServiceConnected");
 			}
 
 			@Override
 			public void onServiceDisconnected(ComponentName name) {
+				Logging.logEntrance("ServiceConnection");
 				serviceBound = false;
-
-				Log.d("ServiceConnection", "MediaPlayerUtils # onServiceDisconnected");
 			}
 		};
 
 		private void startMusicService() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			if (playIntent == null) {
 				playIntent = new Intent(HomeActivity.this, MusicService.class);
 				bind();
@@ -445,6 +448,7 @@ public class HomeActivity extends Activity {
 		}
 
 		private void stopMusicService() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			unbind();
 			stopService(playIntent);
 			musicService = null;
@@ -456,22 +460,26 @@ public class HomeActivity extends Activity {
 			}
 			boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
 
-			Log.d(ACTIVITY_SERVICE, "Bind: " + bind);
+			Logging.logEntrance(ACTIVITY_SERVICE, " (" + bind + ")");
 		}
 
 		private void unbind() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			unbindService(musicConnection);
 		}
 
 		private void startPlaying() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			musicService.playMusic();
 		}
 
 		private void pausePlaying() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			musicService.pauseMusic();
 		}
 
 		private boolean isPlaying() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
 			return musicService != null && musicService.isPlaying();
 		}
 	}

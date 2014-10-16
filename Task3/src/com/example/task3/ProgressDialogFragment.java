@@ -5,9 +5,10 @@ import android.app.DialogFragment;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 
 import java.util.HashSet;
+
+import com.example.task3.tools.Logging;
 
 public class ProgressDialogFragment extends DialogFragment {
 
@@ -22,8 +23,7 @@ public class ProgressDialogFragment extends DialogFragment {
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		Log.d(DIALOG_FRAGMENT, "MyDialogFragment # onCreateDialog");
-
+		Logging.logEntrance(DIALOG_FRAGMENT);
 		pd = new ProgressDialog(getActivity());
 
 		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -37,8 +37,7 @@ public class ProgressDialogFragment extends DialogFragment {
 	@Override
 	public void onCancel(DialogInterface dialog) {
 		super.onCancel(dialog);
-
-		Log.d(DIALOG_FRAGMENT, "MyDialogFragment # onCancel");
+		Logging.logEntrance(DIALOG_FRAGMENT);
 
 		for (CancelListener listener : cancelListeners) {
 			listener.onCancel();
@@ -46,13 +45,13 @@ public class ProgressDialogFragment extends DialogFragment {
 	}
 
 	public void addCancelListener(CancelListener listener) {
-		Log.d(DIALOG_FRAGMENT, "MyDialogFragment # addProgressListener");
+		Logging.logEntrance(DIALOG_FRAGMENT);
 
 		cancelListeners.add(listener);
 	}
 
 	public void removeCancelListener(CancelListener listener) {
-		Log.d(DIALOG_FRAGMENT, "MyDialogFragment # removeCancelListener");
+		Logging.logEntrance(DIALOG_FRAGMENT);
 
 		cancelListeners.remove(listener);
 	}
