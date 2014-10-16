@@ -74,20 +74,25 @@ public class HomeActivity extends Activity {
 			public void onClick(View v) {
 				if (isPauseButtonPressed()) {
 					statesUtils.setIdleState();
+
 					mediaPlayerUtils.pausePlaying();
+					mediaPlayerUtils.stopMusicService();
 				} else if (isPlayButtonPressed()) {
 					statesUtils.setPlayingState();
+
+					mediaPlayerUtils.startMusicService();
 					mediaPlayerUtils.startPlaying();
 				}
 				Logging.logEntrance(ACTIVITY_SERVICE, "IsPlaying: " + mediaPlayerUtils.isPlaying());
 			}
 		});
 
-		if (savedInstanceState != null) { // TODO assume on first time the activity is started we receive null in savedInstanceState
-			mediaPlayerUtils.bind();
-		} else {
-			mediaPlayerUtils.startMusicService();
-		}
+		mediaPlayerUtils.bind();
+		// if (savedInstanceState != null) { // assume at first time the activity is started we receive null in savedInstanceState
+		// mediaPlayerUtils.bind();
+		// } else {
+		// mediaPlayerUtils.startMusicService();
+		// }
 
 		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
@@ -222,11 +227,13 @@ public class HomeActivity extends Activity {
 		}
 
 		private void show(int notificationId, Notification notification) {
-			getNotificationManager().notify(notificationId, notification);
+			// getNotificationManager().notify(notificationId, notification);
+			mediaPlayerUtils.musicService.startForeground(notificationId, notification);
 		}
 
 		private void hide(int notificationId) {
-			getNotificationManager().cancel(notificationId);
+			// getNotificationManager().cancel(notificationId);
+			mediaPlayerUtils.musicService.stopForeground(true);
 		}
 
 		private NotificationManager getNotificationManager() {
@@ -466,14 +473,14 @@ public class HomeActivity extends Activity {
 			Logging.logEntrance(ACTIVITY_SERVICE);
 			if (playIntent == null) {
 				playIntent = new Intent(HomeActivity.this, MusicService.class);
-				bind();
+				// bind();
 				startService(playIntent);
 			}
 		}
 
 		private void stopMusicService() {
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			unbind();
+			// unbind();
 			stopService(playIntent);
 			musicService = null;
 		}

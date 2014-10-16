@@ -54,6 +54,32 @@ public class MusicService extends Service implements OnPreparedListener,
 		player.setOnCompletionListener(this);
 	}
 
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		int res = super.onStartCommand(intent, flags, startId);
+		Logging.logEntrance(MUSIC_SERVICE);
+
+		// new Handler(getMainLooper()).post(new Runnable() {
+		//
+		// @Override
+		// public void run() {
+		// // TODO Auto-generated method stub
+		//
+		// // playMusic();
+		// }
+		// });
+
+		return res;
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		Logging.logEntrance(MUSIC_SERVICE);
+		player.release();
+		player = null;
+	}
+
 	public void setMusic(byte[] bytes) {
 		Logging.logEntrance(MUSIC_SERVICE);
 
@@ -122,13 +148,13 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	public boolean isPlaying() {
-		Logging.logEntrance(MUSIC_SERVICE);
 		boolean result = false;
 		try{
 			result = prepared && player.isPlaying();
 		} catch (IllegalStateException e) {
 			Log.e(MUSIC_SERVICE, "MusicService # isPlaying", e);
 		}
+		Logging.logEntrance(MUSIC_SERVICE, "" + result);
 		return result;
 	}
 
@@ -150,8 +176,7 @@ public class MusicService extends Service implements OnPreparedListener,
 
 	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
-		// TODO Auto-generated method stub
-		Logging.logEntrance(MUSIC_SERVICE);
+		Logging.logEntrance(MUSIC_SERVICE, String.format("Error(what: %d, extra: %d)", what, extra));
 		return false;
 	}
 
