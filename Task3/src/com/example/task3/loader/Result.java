@@ -10,15 +10,15 @@ public class Result {
 	}
 
 	public static Result finished(byte[] loadedFile) {
-		return new Result(loadedFile);
+		return new Result(LoaderState.FINISHED, loadedFile, -1, -1, null);
 	}
 
 	public static Result inProgress(int progress, int maxProgress) {
-		return new Result(progress, maxProgress);
+		return new Result(LoaderState.IN_PROGRESS, null, progress, maxProgress, null);
 	}
 
 	public static Result exception(Throwable exception) {
-		return new Result(exception);
+		return new Result(LoaderState.EXCEPTION, null, -1, -1, exception);
 	}
 
 	public static Result canceled() {
@@ -32,17 +32,6 @@ public class Result {
 	public final int maxProgress;
 	public final Throwable exception;
 
-	private Result(byte[] loadedFile) {
-		this(LoaderState.FINISHED, loadedFile, -1, -1, null);
-	}
-
-	private Result(int progress, int maxProgress) {
-		this(LoaderState.IN_PROGRESS, null, progress, maxProgress, null);
-	}
-
-	private Result(Throwable exception) {
-		this(LoaderState.EXCEPTION, null, -1, -1, exception);
-	}
 
 	private Result(LoaderState state, byte[] loadedFile, int progress, int maxProgress, Throwable exception) {
 		this.state = state;
