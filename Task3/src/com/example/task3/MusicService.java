@@ -11,21 +11,24 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class MusicService extends Service implements OnPreparedListener,
-		OnCompletionListener, OnErrorListener {
+import com.example.task3.tools.Finally;
+import com.example.task3.tools.Logging;
+
+public class MusicService extends Service implements OnPreparedListener, OnCompletionListener, OnErrorListener {
 
 	private static final String MUSIC_SERVICE = "MusicService";
+	private static final int NOTIFICATION_ID = 2;
 
 	public class MusicBinder extends Binder {
 
 		public MusicService getService() {
+			Logging.logEntrance(MUSIC_SERVICE);
 			return MusicService.this;
 		}
 	}
@@ -34,22 +37,40 @@ public class MusicService extends Service implements OnPreparedListener,
 	private byte[] fileBytes;
 	private MediaPlayer player;
 	private boolean prepared = false;
-
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		Logging.logEntrance(MUSIC_SERVICE);
 
 		player = new MediaPlayer();
 		addPlayerListeners();
 	}
 
 	private void addPlayerListeners() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		player.setOnPreparedListener(this);
 		player.setOnErrorListener(this);
 		player.setOnCompletionListener(this);
 	}
 
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		super.onStartCommand(intent, flags, startId);
+		Logging.logEntrance(MUSIC_SERVICE);
+		return START_STICKY;
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		Logging.logEntrance(MUSIC_SERVICE);
+		player.release();
+		player = null;
+	}
+
 	public void setMusic(byte[] bytes) {
+		Logging.logEntrance(MUSIC_SERVICE);
+
 		fileBytes = bytes;
 		prepared = false;
 		player.release();
@@ -69,35 +90,35 @@ public class MusicService extends Service implements OnPreparedListener,
 		FileInputStream in = null;
 		try {
 			in = new FileInputStream(temp);
+			player.setLooping(true);
 			player.setDataSource(in.getFD());
 			player.setAudioStreamType(AudioManager.STREAM_MUSIC);
 		} catch (IllegalArgumentException e) {
 			Log.e(MUSIC_SERVICE, "", e);
 		} catch (IllegalStateException e) {
-			Log.e(MUSIC_SERVICE,
-					"Exception while trying to set source data to mediaPlayer in incorrect state.",
-					e);
+			Log.e(MUSIC_SERVICE, "Exception while trying to set source data to mediaPlayer in incorrect state.", e);
 		} catch (IOException e) {
 			Log.e(MUSIC_SERVICE, "Can't read data from temp file.");
 			throw new RuntimeException(e);
 		} finally {
-			closeFinally(in);
+			Finally.close(in);
 		}
 	}
 
-	private File saveAsTempFile(String prefix, String suffix, byte[] bytes)
-			throws IOException, FileNotFoundException {
+	private File saveAsTempFile(String prefix, String suffix, byte[] bytes) throws IOException, FileNotFoundException {
+		Logging.logEntrance(MUSIC_SERVICE);
 		File temp = File.createTempFile(prefix, suffix, getCacheDir());
 		FileOutputStream out = new FileOutputStream(temp);
 		try {
 			out.write(bytes);
 		} finally {
-			closeFinally(out);
+			Finally.close(out);
 		}
 		return temp;
 	}
 
 	public void playMusic() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		if (!prepared) {
 			player.prepareAsync();
 		} else {
@@ -106,10 +127,12 @@ public class MusicService extends Service implements OnPreparedListener,
 	}
 
 	public void pauseMusic() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		player.pause();
 	}
 
 	private void resumeMusic() {
+		Logging.logEntrance(MUSIC_SERVICE);
 		player.start();
 	}
 
@@ -120,48 +143,45 @@ public class MusicService extends Service implements OnPreparedListener,
 		} catch (IllegalStateException e) {
 			Log.e(MUSIC_SERVICE, "MusicService # isPlaying", e);
 		}
+		Logging.logEntrance(MUSIC_SERVICE, "" + result);
 		return result;
+	}
+
+	public boolean isPrepared() {
+		return prepared;
 	}
 
 	@Override
 	public IBinder onBind(Intent intent) {
+		Logging.logEntrance(MUSIC_SERVICE);
 		return musicBind;
 	}
 
 	@Override
 	public boolean onUnbind(Intent intent) {
-		if (isPlaying()) {
-			player.stop();
-		}
-		player.release();
+		Logging.logEntrance(MUSIC_SERVICE);
+		// if (isPlaying()) {
+		// player.stop();
+		// }
+		// player.release();
 		return false;
 	}
 
 	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
-		// TODO Auto-generated method stub
+		Logging.logEntrance(MUSIC_SERVICE, String.format("Error(what: %d, extra: %d)", what, extra));
 		return false;
 	}
 
 	@Override
 	public void onCompletion(MediaPlayer player) {
-		player.start();
+		Logging.logEntrance(MUSIC_SERVICE);
 	}
 
 	@Override
 	public void onPrepared(MediaPlayer player) {
+		Logging.logEntrance(MUSIC_SERVICE);
 		prepared = true;
 		resumeMusic();
-	}
-
-	private void closeFinally(Closeable c) {
-		try {
-			if (c != null) {
-				c.close();
-			}
-		} catch (IOException e) {
-			Log.i(MUSIC_SERVICE,
-					"Exception occures while trying to close resource", e);
-		}
 	}
 }
