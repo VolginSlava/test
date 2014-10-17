@@ -3,7 +3,6 @@ package com.example.task3;
 import android.app.Activity;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
@@ -88,11 +87,6 @@ public class HomeActivity extends Activity {
 		});
 
 		mediaPlayerUtils.bind();
-		// if (savedInstanceState != null) { // assume at first time the activity is started we receive null in savedInstanceState
-		// mediaPlayerUtils.bind();
-		// } else {
-		// mediaPlayerUtils.startMusicService();
-		// }
 
 		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
@@ -115,7 +109,7 @@ public class HomeActivity extends Activity {
 		super.onRestart();
 		Logging.logEntrance(ACTIVITY_SERVICE);
 
-		notificationsUtils.hide(NOTIFICATION_ID);
+		// notificationsUtils.hide(NOTIFICATION_ID); // TODO remove
 
 		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
@@ -154,8 +148,8 @@ public class HomeActivity extends Activity {
 		super.onStop();
 		Logging.logEntrance(ACTIVITY_SERVICE);
 
-		Notification notification = notificationsUtils.create(NOTIFICATION_ID);
-		notificationsUtils.show(NOTIFICATION_ID, notification);
+		// Notification notification = notificationsUtils.create(NOTIFICATION_ID); // TODO remove
+		// notificationsUtils.show(NOTIFICATION_ID, notification);
 	}
 
 	@Override
@@ -166,7 +160,7 @@ public class HomeActivity extends Activity {
 		if (mediaPlayerUtils.serviceBound) {
 			mediaPlayerUtils.unbind();
 		}
-		notificationsUtils.hide(NOTIFICATION_ID);
+		// notificationsUtils.hide(NOTIFICATION_ID); // TODO remove
 	}
 
 	@Override
@@ -226,18 +220,18 @@ public class HomeActivity extends Activity {
 			return builder.getNotification();
 		}
 
+		@Deprecated
 		private void show(int notificationId, Notification notification) {
-			// getNotificationManager().notify(notificationId, notification);
-			mediaPlayerUtils.musicService.startForeground(notificationId, notification);
+			if (mediaPlayerUtils.serviceBound) {
+				mediaPlayerUtils.musicService.startForeground(notificationId, notification);
+			}
 		}
 
+		@Deprecated
 		private void hide(int notificationId) {
-			// getNotificationManager().cancel(notificationId);
-			mediaPlayerUtils.musicService.stopForeground(true);
-		}
-
-		private NotificationManager getNotificationManager() {
-			return (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+			if (mediaPlayerUtils.serviceBound) {
+				mediaPlayerUtils.musicService.stopForeground(true);
+			}
 		}
 	}
 
@@ -473,16 +467,21 @@ public class HomeActivity extends Activity {
 			Logging.logEntrance(ACTIVITY_SERVICE);
 			if (playIntent == null) {
 				playIntent = new Intent(HomeActivity.this, MusicService.class);
+				playIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 				// bind();
 				startService(playIntent);
 			}
+			Notification notification = notificationsUtils.create(NOTIFICATION_ID);
+			notificationsUtils.show(NOTIFICATION_ID, notification);
 		}
 
 		private void stopMusicService() {
 			Logging.logEntrance(ACTIVITY_SERVICE);
 			// unbind();
 			stopService(playIntent);
-			musicService = null;
+			// musicService = null;
+
+			notificationsUtils.hide(NOTIFICATION_ID);
 		}
 
 		private void bind() {
@@ -501,17 +500,21 @@ public class HomeActivity extends Activity {
 
 		private void startPlaying() {
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			musicService.playMusic();
+			if (serviceBound) {
+				musicService.playMusic();
+			}
 		}
 
 		private void pausePlaying() {
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			musicService.pauseMusic();
+			if (serviceBound) {
+				musicService.pauseMusic();
+			}
 		}
 
 		private boolean isPlaying() {
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			return musicService != null && musicService.isPlaying();
+			return serviceBound && musicService.isPlaying();
 		}
 	}
 }

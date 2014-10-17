@@ -65,11 +65,10 @@ public class MusicService extends Service implements OnPreparedListener,
 		// public void run() {
 		// // TODO Auto-generated method stub
 		//
-		// // playMusic();
+		// playMusic();
 		// }
 		// });
-
-		return res;
+		return START_STICKY;// res;
 	}
 
 	@Override
@@ -102,6 +101,7 @@ public class MusicService extends Service implements OnPreparedListener,
 		FileInputStream in = null;
 		try {
 			in = new FileInputStream(temp);
+			player.setLooping(true);
 			player.setDataSource(in.getFD());
 			player.setAudioStreamType(AudioManager.STREAM_MUSIC);
 		} catch (IllegalArgumentException e) {
@@ -167,10 +167,10 @@ public class MusicService extends Service implements OnPreparedListener,
 	@Override
 	public boolean onUnbind(Intent intent) {
 		Logging.logEntrance(MUSIC_SERVICE);
-		if (isPlaying()) {
-			player.stop();
-		}
-		player.release();
+		// if (isPlaying()) {
+		// player.stop();
+		// }
+		// player.release();
 		return false;
 	}
 
@@ -183,7 +183,6 @@ public class MusicService extends Service implements OnPreparedListener,
 	@Override
 	public void onCompletion(MediaPlayer player) {
 		Logging.logEntrance(MUSIC_SERVICE);
-		player.start();
 	}
 
 	@Override
