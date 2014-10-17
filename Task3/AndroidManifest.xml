@@ -32,10 +32,14 @@
 		</activity>
 
 		<service
-			android:name="com.example.task3.MusicService"
+			android:name="com.example.task3.services.MusicService"
 			android:exported="false" >
 		</service>
-
+<!-- 		<service -->
+<!-- 			android:name="com.example.task3.services.MyMusicService" -->
+<!-- 			android:exported="false" > -->
+<!-- 		</service> -->
+		
 	</application>
 
 </manifest>

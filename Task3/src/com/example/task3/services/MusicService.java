@@ -1,4 +1,4 @@
-package com.example.task3;
+package com.example.task3.services;
 
 import android.app.Service;
 import android.content.Intent;
@@ -20,8 +20,8 @@ import java.io.IOException;
 import com.example.task3.tools.Finally;
 import com.example.task3.tools.Logging;
 
-public class MusicService extends Service implements OnPreparedListener,
-		OnCompletionListener, OnErrorListener {
+
+public class MusicService extends Service implements OnPreparedListener, OnCompletionListener, OnErrorListener {
 
 	private static final String MUSIC_SERVICE = "MusicService";
 
@@ -37,6 +37,7 @@ public class MusicService extends Service implements OnPreparedListener,
 	private byte[] fileBytes;
 	private MediaPlayer player;
 	private boolean prepared = false;
+
 
 	@Override
 	public void onCreate() {
@@ -149,7 +150,7 @@ public class MusicService extends Service implements OnPreparedListener,
 
 	public boolean isPlaying() {
 		boolean result = false;
-		try{
+		try {
 			result = prepared && player.isPlaying();
 		} catch (IllegalStateException e) {
 			Log.e(MUSIC_SERVICE, "MusicService # isPlaying", e);

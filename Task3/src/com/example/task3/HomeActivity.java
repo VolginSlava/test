@@ -24,10 +24,11 @@ import android.widget.TextView;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import com.example.task3.MusicService.MusicBinder;
 import com.example.task3.ProgressDialogFragment.CancelListener;
 import com.example.task3.loader.NewFileLoader;
 import com.example.task3.loader.Result;
+import com.example.task3.services.MusicService;
+import com.example.task3.services.MusicService.MusicBinder;
 import com.example.task3.tools.Logging;
 
 public class HomeActivity extends Activity {
@@ -220,14 +221,12 @@ public class HomeActivity extends Activity {
 			return builder.getNotification();
 		}
 
-		@Deprecated
 		private void show(int notificationId, Notification notification) {
 			if (mediaPlayerUtils.serviceBound) {
 				mediaPlayerUtils.musicService.startForeground(notificationId, notification);
 			}
 		}
 
-		@Deprecated
 		private void hide(int notificationId) {
 			if (mediaPlayerUtils.serviceBound) {
 				mediaPlayerUtils.musicService.stopForeground(true);
@@ -412,6 +411,7 @@ public class HomeActivity extends Activity {
 			Logging.logEntrance(ACTIVITY_SERVICE, "File downloading was finished. Result: " + (bytes != null ? String.format("%,d bytes.", bytes.length) : null));
 			
 			downloadComplete = true;
+			Logging.logEntranceExtra("mediaPlayerUtils.musicService " + mediaPlayerUtils.musicService);
 			mediaPlayerUtils.musicService.setMusic(bytes);
 			
 			Handler handler = new Handler();
@@ -435,6 +435,7 @@ public class HomeActivity extends Activity {
 	}
 
 	private class MediaPlayerUtils {
+
 		private MusicService musicService;
 		private Intent playIntent;
 		private boolean serviceBound = false;
@@ -464,38 +465,70 @@ public class HomeActivity extends Activity {
 		};
 
 		private void startMusicService() {
+			new Thread() {
+				@Override
+				public void run() {
+					if (playIntent == null) {
+						playIntent = new Intent(HomeActivity.this, MusicService.class);
+						playIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+						startService(playIntent);
+					}
+					Notification notification = notificationsUtils.create(NOTIFICATION_ID);
+					notificationsUtils.show(NOTIFICATION_ID, notification);
+				}
+			}.start();
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			if (playIntent == null) {
-				playIntent = new Intent(HomeActivity.this, MusicService.class);
-				playIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				// bind();
-				startService(playIntent);
-			}
-			Notification notification = notificationsUtils.create(NOTIFICATION_ID);
-			notificationsUtils.show(NOTIFICATION_ID, notification);
+			// if (playIntent == null) {
+			// playIntent = new Intent(HomeActivity.this, MusicService.class);
+			// playIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			// // bind();
+			// startService(playIntent);
+			// }
+			// Notification notification = notificationsUtils.create(NOTIFICATION_ID);
+			// notificationsUtils.show(NOTIFICATION_ID, notification);
 		}
 
 		private void stopMusicService() {
+			new Thread() {
+				@Override
+				public void run() {
+					stopService(playIntent);
+					// notificationsUtils.hide(NOTIFICATION_ID);
+				}
+			}.start();
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			// unbind();
-			stopService(playIntent);
-			// musicService = null;
-
+			// stopService(playIntent);
 			notificationsUtils.hide(NOTIFICATION_ID);
 		}
 
 		private void bind() {
-			if (playIntent == null) {
-				playIntent = new Intent(HomeActivity.this, MusicService.class);
-			}
-			boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
+			new Thread() {
+				@Override
+				public void run() {
+					if (playIntent == null) {
+						playIntent = new Intent(HomeActivity.this, MusicService.class);
+					}
+					boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
+				}
+			}.start();
+			// if (playIntent == null) {
+			// playIntent = new Intent(HomeActivity.this, MusicService.class);
+			// }
+			// boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
 
-			Logging.logEntrance(ACTIVITY_SERVICE, " (" + bind + ")");
+			// Logging.logEntrance(ACTIVITY_SERVICE, " (" + bind + ")");
+			Logging.logEntrance(ACTIVITY_SERVICE);
 		}
 
 		private void unbind() {
+			new Thread() {
+				@Override
+				public void run() {
+					unbindService(musicConnection);
+				}
+			}.start();
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			unbindService(musicConnection);
+			// unbindService(musicConnection);
 		}
 
 		private void startPlaying() {
