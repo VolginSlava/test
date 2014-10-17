@@ -24,11 +24,10 @@ import android.widget.TextView;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import com.example.task3.MusicService.MusicBinder;
 import com.example.task3.ProgressDialogFragment.CancelListener;
 import com.example.task3.loader.NewFileLoader;
 import com.example.task3.loader.Result;
-import com.example.task3.services.MusicService;
-import com.example.task3.services.MusicService.MusicBinder;
 import com.example.task3.tools.Logging;
 
 public class HomeActivity extends Activity {
@@ -56,11 +55,13 @@ public class HomeActivity extends Activity {
 	private MediaPlayerUtils mediaPlayerUtils = new MediaPlayerUtils();
 	private NotificationsUtils notificationsUtils = new NotificationsUtils();
 
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home);
 		Logging.logEntrance(ACTIVITY_SERVICE);
+
 
 		if (savedInstanceState != null) {
 			loaderUtils.downloadComplete = savedInstanceState.getBoolean(DOWNLOAD_COMPLETE_KEY, false);
@@ -74,13 +75,9 @@ public class HomeActivity extends Activity {
 			public void onClick(View v) {
 				if (isPauseButtonPressed()) {
 					statesUtils.setIdleState();
-
 					mediaPlayerUtils.pausePlaying();
-					mediaPlayerUtils.stopMusicService();
 				} else if (isPlayButtonPressed()) {
 					statesUtils.setPlayingState();
-
-					mediaPlayerUtils.startMusicService();
 					mediaPlayerUtils.startPlaying();
 				}
 				Logging.logEntrance(ACTIVITY_SERVICE, "IsPlaying: " + mediaPlayerUtils.isPlaying());
@@ -88,13 +85,6 @@ public class HomeActivity extends Activity {
 		});
 
 		mediaPlayerUtils.bind();
-
-		if (!loaderUtils.isFileDownloaded()) {
-			Bundle bundle = new Bundle();
-			bundle.putSerializable(FILE_URL_KEY, FILE_URL);
-			getLoaderManager().initLoader(LoaderUtils.FILE_LOADER_ID, bundle, loaderUtils);
-			dialogUtils.showProgressDialog();
-		}
 	}
 
 	@Override
@@ -109,8 +99,6 @@ public class HomeActivity extends Activity {
 	protected void onRestart() {
 		super.onRestart();
 		Logging.logEntrance(ACTIVITY_SERVICE);
-
-		// notificationsUtils.hide(NOTIFICATION_ID); // TODO remove
 
 		if (!loaderUtils.isFileDownloaded()) {
 			Bundle bundle = new Bundle();
@@ -132,7 +120,6 @@ public class HomeActivity extends Activity {
 		super.onResume();
 		Logging.logEntrance(ACTIVITY_SERVICE);
 
-		statesUtils.onResumeUpdateState();
 		dialogUtils.addCancelListener();
 	}
 
@@ -148,9 +135,6 @@ public class HomeActivity extends Activity {
 	protected void onStop() {
 		super.onStop();
 		Logging.logEntrance(ACTIVITY_SERVICE);
-
-		// Notification notification = notificationsUtils.create(NOTIFICATION_ID); // TODO remove
-		// notificationsUtils.show(NOTIFICATION_ID, notification);
 	}
 
 	@Override
@@ -161,17 +145,12 @@ public class HomeActivity extends Activity {
 		if (mediaPlayerUtils.serviceBound) {
 			mediaPlayerUtils.unbind();
 		}
-		// notificationsUtils.hide(NOTIFICATION_ID); // TODO remove
 	}
 
 	@Override
 	public void onBackPressed() {
 		super.onBackPressed();
 		Logging.logEntrance(ACTIVITY_SERVICE);
-
-		if (mediaPlayerUtils.isPlaying()) {
-			mediaPlayerUtils.pausePlaying();
-		}
 	}
 
 	private boolean isPauseButtonPressed() {
@@ -212,26 +191,22 @@ public class HomeActivity extends Activity {
 
 			Notification.Builder builder = new Notification.Builder(HomeActivity.this);
 
-			builder.setContentTitle("Title")
-					.setContentText("text")
-					.setContentInfo("info")
-					.setSmallIcon(R.drawable.ic_launcher)
-					.setContentIntent(pendingIntent);
+			builder.setContentTitle("Title").setContentText("text").setContentInfo("info").setSmallIcon(R.drawable.ic_launcher).setContentIntent(pendingIntent);
 
 			return builder.getNotification();
 		}
 
-		private void show(int notificationId, Notification notification) {
-			if (mediaPlayerUtils.serviceBound) {
-				mediaPlayerUtils.musicService.startForeground(notificationId, notification);
-			}
-		}
-
-		private void hide(int notificationId) {
-			if (mediaPlayerUtils.serviceBound) {
-				mediaPlayerUtils.musicService.stopForeground(true);
-			}
-		}
+		// private void show(int notificationId, Notification notification) {
+		// if (mediaPlayerUtils.serviceBound) {
+		// mediaPlayerUtils.musicService.startForeground(notificationId, notification);
+		// }
+		// }
+		//
+		// private void hide(int notificationId) {
+		// if (mediaPlayerUtils.serviceBound) {
+		// mediaPlayerUtils.musicService.stopForeground(true);
+		// }
+		// }
 	}
 
 	private class StatesUtils {
@@ -261,27 +236,25 @@ public class HomeActivity extends Activity {
 			label.setText(R.string.home_status_label_playing);
 		}
 
-		private void onResumeUpdateState() {
-			Logging.logEntrance(ACTIVITY_SERVICE);
-
-			if (!loaderUtils.isFileDownloaded()) {
-				setDownloadingState();
-			} else if (mediaPlayerUtils.isPlaying()) {
-				setPlayingState();
-			} else {
-				setIdleState();
-			}
-		}
+		// private void onResumeUpdateState() {
+		// Logging.logEntrance(ACTIVITY_SERVICE);
+		//
+		// if (!loaderUtils.isFileDownloaded()) {
+		// setDownloadingState();
+		// } else if (mediaPlayerUtils.isPlaying()) {
+		// setPlayingState();
+		// } else {
+		// setIdleState();
+		// }
+		// }
 
 		private void onServiceConnectedUpdateState() {
 			Logging.logEntrance(ACTIVITY_SERVICE);
 
-			if (loaderUtils.isFileDownloaded()) {
-				if (mediaPlayerUtils.isPlaying()) {
-					statesUtils.setPlayingState();
-				} else {
-					statesUtils.setIdleState();
-				}
+			if (mediaPlayerUtils.isPlaying()) {
+				statesUtils.setPlayingState();
+			} else {
+				statesUtils.setIdleState();
 			}
 		}
 	}
@@ -405,13 +378,19 @@ public class HomeActivity extends Activity {
 				pd.setMax(maxProgress);
 				pd.setProgress(progress);
 			}
+			runOnUiThread(new Runnable() {
+				
+				@Override
+				public void run() {
+					statesUtils.setDownloadingState();
+				}
+			});
 		}
 
 		private void onFinish(final byte[] bytes) {
 			Logging.logEntrance(ACTIVITY_SERVICE, "File downloading was finished. Result: " + (bytes != null ? String.format("%,d bytes.", bytes.length) : null));
 			
 			downloadComplete = true;
-			Logging.logEntranceExtra("mediaPlayerUtils.musicService " + mediaPlayerUtils.musicService);
 			mediaPlayerUtils.musicService.setMusic(bytes);
 			
 			Handler handler = new Handler();
@@ -435,7 +414,6 @@ public class HomeActivity extends Activity {
 	}
 
 	private class MediaPlayerUtils {
-
 		private MusicService musicService;
 		private Intent playIntent;
 		private boolean serviceBound = false;
@@ -449,6 +427,17 @@ public class HomeActivity extends Activity {
 
 				musicService = binder.getService();
 				serviceBound = true;
+				startMusicService();
+
+				if (!loaderUtils.isFileDownloaded() && !mediaPlayerUtils.isPrepared()) {
+					Bundle bundle = new Bundle();
+					bundle.putSerializable(FILE_URL_KEY, FILE_URL);
+					getLoaderManager().initLoader(LoaderUtils.FILE_LOADER_ID, bundle, loaderUtils);
+					dialogUtils.showProgressDialog();
+				}
+				if (!loaderUtils.downloadComplete && mediaPlayerUtils.isPrepared()) {
+					loaderUtils.downloadComplete = true;
+				}
 
 				statesUtils.onServiceConnectedUpdateState();
 
@@ -465,70 +454,34 @@ public class HomeActivity extends Activity {
 		};
 
 		private void startMusicService() {
-			new Thread() {
-				@Override
-				public void run() {
-					if (playIntent == null) {
-						playIntent = new Intent(HomeActivity.this, MusicService.class);
-						playIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-						startService(playIntent);
-					}
-					Notification notification = notificationsUtils.create(NOTIFICATION_ID);
-					notificationsUtils.show(NOTIFICATION_ID, notification);
-				}
-			}.start();
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			// if (playIntent == null) {
-			// playIntent = new Intent(HomeActivity.this, MusicService.class);
-			// playIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			// // bind();
-			// startService(playIntent);
-			// }
-			// Notification notification = notificationsUtils.create(NOTIFICATION_ID);
-			// notificationsUtils.show(NOTIFICATION_ID, notification);
+			if (playIntent == null) {
+				playIntent = new Intent(HomeActivity.this, MusicService.class);
+				playIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			}
+			startService(playIntent);
+			musicService.startForeground(NOTIFICATION_ID, notificationsUtils.create(NOTIFICATION_ID));
 		}
 
 		private void stopMusicService() {
-			new Thread() {
-				@Override
-				public void run() {
-					stopService(playIntent);
-					// notificationsUtils.hide(NOTIFICATION_ID);
-				}
-			}.start();
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			// stopService(playIntent);
-			notificationsUtils.hide(NOTIFICATION_ID);
+			stopService(playIntent);
+
+			musicService.stopForeground(true);
 		}
 
 		private void bind() {
-			new Thread() {
-				@Override
-				public void run() {
-					if (playIntent == null) {
-						playIntent = new Intent(HomeActivity.this, MusicService.class);
-					}
-					boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
-				}
-			}.start();
-			// if (playIntent == null) {
-			// playIntent = new Intent(HomeActivity.this, MusicService.class);
-			// }
-			// boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
+			if (playIntent == null) {
+				playIntent = new Intent(HomeActivity.this, MusicService.class);
+			}
+			boolean bind = bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
 
-			// Logging.logEntrance(ACTIVITY_SERVICE, " (" + bind + ")");
-			Logging.logEntrance(ACTIVITY_SERVICE);
+			Logging.logEntrance(ACTIVITY_SERVICE, " (" + bind + ")");
 		}
 
 		private void unbind() {
-			new Thread() {
-				@Override
-				public void run() {
-					unbindService(musicConnection);
-				}
-			}.start();
 			Logging.logEntrance(ACTIVITY_SERVICE);
-			// unbindService(musicConnection);
+			unbindService(musicConnection);
 		}
 
 		private void startPlaying() {
@@ -549,5 +502,11 @@ public class HomeActivity extends Activity {
 			Logging.logEntrance(ACTIVITY_SERVICE);
 			return serviceBound && musicService.isPlaying();
 		}
+
+		private boolean isPrepared() {
+			Logging.logEntrance(ACTIVITY_SERVICE);
+			return serviceBound && musicService.isPrepared();
+		}
+
 	}
 }

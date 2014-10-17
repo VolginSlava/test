@@ -1,4 +1,4 @@
-package com.example.task3.services;
+package com.example.task3;
 
 import android.app.Service;
 import android.content.Intent;
@@ -20,10 +20,10 @@ import java.io.IOException;
 import com.example.task3.tools.Finally;
 import com.example.task3.tools.Logging;
 
-
 public class MusicService extends Service implements OnPreparedListener, OnCompletionListener, OnErrorListener {
 
 	private static final String MUSIC_SERVICE = "MusicService";
+	private static final int NOTIFICATION_ID = 2;
 
 	public class MusicBinder extends Binder {
 
@@ -37,8 +37,6 @@ public class MusicService extends Service implements OnPreparedListener, OnCompl
 	private byte[] fileBytes;
 	private MediaPlayer player;
 	private boolean prepared = false;
-
-
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -57,19 +55,9 @@ public class MusicService extends Service implements OnPreparedListener, OnCompl
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		int res = super.onStartCommand(intent, flags, startId);
+		super.onStartCommand(intent, flags, startId);
 		Logging.logEntrance(MUSIC_SERVICE);
-
-		// new Handler(getMainLooper()).post(new Runnable() {
-		//
-		// @Override
-		// public void run() {
-		// // TODO Auto-generated method stub
-		//
-		// playMusic();
-		// }
-		// });
-		return START_STICKY;// res;
+		return START_STICKY;
 	}
 
 	@Override
@@ -150,13 +138,17 @@ public class MusicService extends Service implements OnPreparedListener, OnCompl
 
 	public boolean isPlaying() {
 		boolean result = false;
-		try {
+		try{
 			result = prepared && player.isPlaying();
 		} catch (IllegalStateException e) {
 			Log.e(MUSIC_SERVICE, "MusicService # isPlaying", e);
 		}
 		Logging.logEntrance(MUSIC_SERVICE, "" + result);
 		return result;
+	}
+
+	public boolean isPrepared() {
+		return prepared;
 	}
 
 	@Override
